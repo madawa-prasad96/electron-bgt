@@ -1,0 +1,73 @@
+{
+  "name": "local-fin-track",
+  "version": "1.0.0",
+  "description": "A local financial tracking application built with Electron.js",
+  "main": "src/main/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "concurrently \"npx tsc --watch\" \"electron .\"",
+    "build": "electron-builder",
+    "build:win": "electron-builder --win",
+    "build:mac": "electron-builder --mac",
+    "build:linux": "electron-builder --linux",
+    "postinstall": "electron-builder install-app-deps",
+    "prisma:generate": "npx prisma generate",
+    "prisma:migrate": "npx prisma migrate dev --name init",
+    "prisma:studio": "npx prisma studio"
+  },
+  "keywords": [
+    "electron",
+    "finance",
+    "tracker",
+    "desktop"
+  ],
+  "author": "LocalFinTrack",
+  "license": "MIT",
+  "build": {
+    "appId": "com.localfintrack.app",
+    "productName": "LocalFinTrack",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "prisma/**/*",
+      "package.json",
+      "!node_modules/@prisma/engines/**/*",
+      "!node_modules/.cache/**/*"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "assets/icon.png"
+    },
+    "mac": {
+      "category": "public.app-category.finance",
+      "target": "dmg",
+      "icon": "assets/icon.png"
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "assets/icon.png"
+    }
+  },
+  "devDependencies": {
+    "electron": "^39.2.6",
+    "electron-builder": "^25.1.8"
+  },
+  "dependencies": {
+    "@electron/remote": "^2.1.3",
+    "@prisma/client": "^5.10.2",
+    "bcryptjs": "^3.0.3",
+    "chart.js": "^4.5.1",
+    "concurrently": "^9.2.1",
+    "cross-env": "^10.1.0",
+    "crypto-js": "^4.2.0",
+    "electron-log": "^5.4.3",
+    "electron-safe-storage": "^1.0.6",
+    "electron-store": "^11.0.2",
+    "pdfmake": "^0.2.20",
+    "prisma": "^5.10.2",
+    "sqlite3": "^5.1.7",
+    "uuid": "^13.0.0"
+  }
+}

@@ -1,0 +1,36 @@
+appId: com.localfintrack.app
+productName: LocalFinTrack
+directories:
+  output: dist
+  buildResources: assets
+files:
+  - src/**
+  - prisma/**
+  - package.json
+  - "!node_modules/@prisma/engines/**/*"
+  - "!node_modules/.cache/**/*"
+extraMetadata:
+  main: src/main/main.js
+win:
+  target:
+    - nsis
+  icon: assets/icon.png
+  publisherName: LocalFinTrack
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  perMachine: false
+mac:
+  category: public.app-category.finance
+  target:
+    - dmg
+  icon: assets/icon.png
+linux:
+  target:
+    - AppImage
+  icon: assets/icon.png
+  category: Finance
+asar: true
+compression: normal
+nodeGypRebuild: false
+buildDependenciesFromSource: false

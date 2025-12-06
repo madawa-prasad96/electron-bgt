@@ -1,0 +1,79 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./data/localFinTrack.db"
+}
+
+model User {
+  id                   Int         @id @default(autoincrement())
+  username             String      @unique
+  passwordHash         String
+  role                 String      // "superadmin" | "admin" | "viewer"
+  isActive             Boolean     @default(true)
+  mustChangePassword   Boolean     @default(true)
+  createdAt            DateTime    @default(now())
+  createdById          Int?
+  createdBy            User?       @relation("CreatedBy", fields: [createdById], references: [id])
+  createdUsers         User[]      @relation("CreatedBy")
+  transactions         Transaction[]
+  categories           Category[]
+  audits               Audit[]
+  updatedTransactions  Transaction[] @relation("UpdatedBy")
+
+  @@map("users")
+}
+
+model Category {
+  id          Int         @id @default(autoincrement())
+  name        String
+  type        String      // "income" or "expense"
+  color       String      @default("#3B82F6")
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  createdById Int
+  createdBy   User        @relation(fields: [createdById], references: [id])
+  transactions Transaction[]
+
+  @@map("categories")
+}
+
+model Transaction {
+  id             Int       @id @default(autoincrement())
+  date           DateTime
+  type           String    // "income" or "expense"
+  amount         Float
+  categoryId     Int
+  category       Category  @relation(fields: [categoryId], references: [id])
+  description    String?
+  paymentMethod  String?
+  notes          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  createdById    Int
+  createdBy      User      @relation(fields: [createdById], references: [id])
+  updatedById    Int?
+  updatedBy      User?     @relation("UpdatedBy", fields: [updatedById], references: [id])
+  audits         Audit[]
+
+  @@map("transactions")
+}
+
+model Audit {
+  id          Int       @id @default(autoincrement())
+  userId      Int
+  user        User      @relation(fields: [userId], references: [id])
+  action      String    // e.g., "CREATE_TRANSACTION", "DELETE_USER"
+  entity      String    // "Transaction", "User", "Category"
+  entityId    Int?
+  details     String?
+  timestamp   DateTime  @default(now())
+  transaction Transaction? @relation(fields: [entityId], references: [id])
+
+  @@map("audits")
+}

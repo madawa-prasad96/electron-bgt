@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Local Electron App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            background-color: #f0f0f0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .user-info {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #e9f7ef;
+            border-left: 4px solid #2ecc71;
+            border-radius: 4px;
+        }
+        .role {
+            font-weight: bold;
+            color: #27ae60;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Electron Desktop Application</h1>
+        <div class="user-info">
+            <p>Welcome to your local Electron application!</p>
+            <p>User Role: <span id="user-role" class="role">Loading...</span></p>
+        </div>
+        <div>
+            <p>This application runs entirely locally and does not connect to the internet.</p>
+            <p>You are logged in as a <span class="role">Super Admin</span> user.</p>
+        </div>
+    </div>
+
+    <!-- You can also require other files to run in this process -->
+    <script src="./renderer.js"></script>
+</body>
+</html>
