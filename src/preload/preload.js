@@ -4,6 +4,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 // the ipcRenderer without exposing the entire object
 contextBridge.exposeInMainWorld('electronAPI', {
   authenticateUser: (credentials) => ipcRenderer.invoke('authenticate-user', credentials),
+  changePassword: (data) => ipcRenderer.invoke('change-password', data),
   getAllUsers: (currentUser) => ipcRenderer.invoke('get-all-users', currentUser),
   createUser: (data) => ipcRenderer.invoke('create-user', data),
   updateUser: (data) => ipcRenderer.invoke('update-user', data),
@@ -16,5 +17,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   createTransaction: (data) => ipcRenderer.invoke('create-transaction', data),
   updateTransaction: (data) => ipcRenderer.invoke('update-transaction', data),
   deleteTransaction: (data) => ipcRenderer.invoke('delete-transaction', data),
+  getAuditLogs: (currentUser) => ipcRenderer.invoke('get-audit-logs', currentUser),
+  backupDatabase: (currentUser) => ipcRenderer.invoke('backup-database', currentUser),
+  restoreDatabase: (currentUser) => ipcRenderer.invoke('restore-database', currentUser),
+  getReportData: (data) => ipcRenderer.invoke('get-report-data', data),
   // We'll add more API methods here as we implement features
 });

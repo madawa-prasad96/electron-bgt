@@ -1,0 +1,35 @@
+<div id="reports-view" class="view hidden">
+    <h2>Reports</h2>
+    <div class="report-filters">
+        <input type="month" id="report-month">
+        <button id="generate-report" class="btn btn-primary">Generate Report</button>
+        <button id="export-pdf" class="btn">Export to PDF</button>
+    </div>
+    <div class="report-content">
+        <div class="chart-container">
+            <h3>Income vs Expenses</h3>
+            <canvas id="income-expense-chart"></canvas>
+        </div>
+        <div class="chart-container">
+            <h3>Category Breakdown</h3>
+            <canvas id="category-breakdown-chart"></canvas>
+        </div>
+        <div class="report-summary">
+            <h3>Summary</h3>
+            <div class="summary-stats">
+                <div class="stat-card">
+                    <h4>Total Income</h4>
+                    <p class="amount income">$0.00</p>
+                </div>
+                <div class="stat-card">
+                    <h4>Total Expenses</h4>
+                    <p class="amount expense">$0.00</p>
+                </div>
+                <div class="stat-card">
+                    <h4>Net Balance</h4>
+                    <p class="amount">$0.00</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

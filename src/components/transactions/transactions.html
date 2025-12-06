@@ -1,0 +1,80 @@
+<div id="transactions-view" class="view hidden">
+    <h2>Transactions</h2>
+    <div class="view-actions">
+        <button id="add-transaction-btn" class="btn btn-primary">Add Transaction</button>
+    </div>
+    <div id="transaction-form-container" class="hidden">
+        <form id="transaction-form">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="transaction-date">Date</label>
+                    <input type="date" id="transaction-date" required>
+                </div>
+                <div class="form-group">
+                    <label for="transaction-type">Type</label>
+                    <select id="transaction-type" required>
+                        <option value="income">Income</option>
+                        <option value="expense">Expense</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="transaction-amount">Amount</label>
+                    <input type="number" id="transaction-amount" step="0.01" min="0" required>
+                </div>
+                <div class="form-group">
+                    <label for="transaction-category">Category</label>
+                    <select id="transaction-category" required>
+                        <option value="">Select Category</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="transaction-description">Description</label>
+                <input type="text" id="transaction-description" required>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="transaction-payment-method">Payment Method</label>
+                    <input type="text" id="transaction-payment-method">
+                </div>
+                <div class="form-group">
+                    <label for="transaction-notes">Notes</label>
+                    <input type="text" id="transaction-notes">
+                </div>
+            </div>
+            <div class="form-actions">
+                <button type="button" id="cancel-transaction-btn" class="btn">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Transaction</button>
+            </div>
+        </form>
+    </div>
+    <div class="filters">
+        <input type="date" id="start-date">
+        <input type="date" id="end-date">
+        <select id="category-filter">
+            <option value="">All Categories</option>
+        </select>
+        <select id="type-filter">
+            <option value="">All Types</option>
+            <option value="income">Income</option>
+            <option value="expense">Expense</option>
+        </select>
+        <button id="apply-filters" class="btn">Apply Filters</button>
+    </div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Description</th>
+                <th>Category</th>
+                <th>Amount</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="transactions-tbody">
+            <!-- Transactions will be populated here -->
+        </tbody>
+    </table>
+</div>

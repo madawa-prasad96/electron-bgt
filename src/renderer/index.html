@@ -19,290 +19,9 @@
         </header>
         
         <main class="app-main">
-            <div id="login-container" class="auth-container">
-                <div class="auth-form">
-                    <h2>Login to Your Account</h2>
-                    <form id="loginForm">
-                        <div class="form-group">
-                            <label for="username">Username</label>
-                            <input type="text" id="username" name="username" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="password">Password</label>
-                            <input type="password" id="password" name="password" required>
-                        </div>
-                        <button type="submit" class="btn btn-primary">Login</button>
-                        <div id="login-message" class="message"></div>
-                    </form>
-                </div>
-            </div>
-            
-            <div id="dashboard-container" class="hidden">
-                <nav class="sidebar">
-                    <ul>
-                        <li><a href="#" class="nav-link active" data-view="dashboard">Dashboard</a></li>
-                        <li><a href="#" class="nav-link" data-view="transactions">Transactions</a></li>
-                        <li><a href="#" class="nav-link" data-view="categories">Categories</a></li>
-                        <li><a href="#" class="nav-link" data-view="reports">Reports</a></li>
-                        <li><a href="#" class="nav-link" data-view="users">User Management</a></li>
-                        <li><a href="#" class="nav-link" data-view="audit">Audit Logs</a></li>
-                        <li><a href="#" class="nav-link" data-view="settings">Settings</a></li>
-                    </ul>
-                </nav>
-                
+            <div id="dashboard-container">
                 <div class="content-area">
-                    <div id="dashboard-view" class="view active">
-                        <h2>Dashboard</h2>
-                        <div class="dashboard-stats">
-                            <div class="stat-card">
-                                <h3>Total Balance</h3>
-                                <p class="amount">$0.00</p>
-                            </div>
-                            <div class="stat-card">
-                                <h3>Income (This Month)</h3>
-                                <p class="amount income">$0.00</p>
-                            </div>
-                            <div class="stat-card">
-                                <h3>Expenses (This Month)</h3>
-                                <p class="amount expense">$0.00</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div id="transactions-view" class="view hidden">
-                        <h2>Transactions</h2>
-                        <div class="view-actions">
-                            <button id="add-transaction-btn" class="btn btn-primary">Add Transaction</button>
-                        </div>
-                        <div id="transaction-form-container" class="hidden">
-                            <form id="transaction-form">
-                                <div class="form-row">
-                                    <div class="form-group">
-                                        <label for="transaction-date">Date</label>
-                                        <input type="date" id="transaction-date" required>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="transaction-type">Type</label>
-                                        <select id="transaction-type" required>
-                                            <option value="income">Income</option>
-                                            <option value="expense">Expense</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="form-row">
-                                    <div class="form-group">
-                                        <label for="transaction-amount">Amount</label>
-                                        <input type="number" id="transaction-amount" step="0.01" min="0" required>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="transaction-category">Category</label>
-                                        <select id="transaction-category" required>
-                                            <option value="">Select Category</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="form-group">
-                                    <label for="transaction-description">Description</label>
-                                    <input type="text" id="transaction-description" required>
-                                </div>
-                                <div class="form-row">
-                                    <div class="form-group">
-                                        <label for="transaction-payment-method">Payment Method</label>
-                                        <input type="text" id="transaction-payment-method">
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="transaction-notes">Notes</label>
-                                        <input type="text" id="transaction-notes">
-                                    </div>
-                                </div>
-                                <div class="form-actions">
-                                    <button type="button" id="cancel-transaction-btn" class="btn">Cancel</button>
-                                    <button type="submit" class="btn btn-primary">Save Transaction</button>
-                                </div>
-                            </form>
-                        </div>
-                        <div class="filters">
-                            <input type="date" id="start-date">
-                            <input type="date" id="end-date">
-                            <select id="category-filter">
-                                <option value="">All Categories</option>
-                            </select>
-                            <select id="type-filter">
-                                <option value="">All Types</option>
-                                <option value="income">Income</option>
-                                <option value="expense">Expense</option>
-                            </select>
-                            <button id="apply-filters" class="btn">Apply Filters</button>
-                        </div>
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th>Date</th>
-                                    <th>Description</th>
-                                    <th>Category</th>
-                                    <th>Amount</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="transactions-tbody">
-                                <!-- Transactions will be populated here -->
-                            </tbody>
-                        </table>
-                    </div>
-                    
-                    <div id="categories-view" class="view hidden">
-                        <h2>Categories</h2>
-                        <div class="tabs">
-                            <button class="tab-btn active" data-tab="income">Income</button>
-                            <button class="tab-btn" data-tab="expense">Expense</button>
-                        </div>
-                        <div class="view-actions">
-                            <button id="add-category-btn" class="btn btn-primary">Add Category</button>
-                        </div>
-                        <div id="category-form-container" class="hidden">
-                            <form id="category-form">
-                                <div class="form-row">
-                                    <div class="form-group">
-                                        <label for="category-name">Name</label>
-                                        <input type="text" id="category-name" required>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="category-type">Type</label>
-                                        <select id="category-type" required>
-                                            <option value="income">Income</option>
-                                            <option value="expense">Expense</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="form-group">
-                                    <label for="category-color">Color</label>
-                                    <div class="color-picker">
-                                        <input type="color" id="category-color" value="#3B82F6">
-                                        <span id="color-preview" class="color-preview" style="background-color: #3B82F6;"></span>
-                                    </div>
-                                </div>
-                                <div class="form-actions">
-                                    <button type="button" id="cancel-category-btn" class="btn">Cancel</button>
-                                    <button type="submit" class="btn btn-primary">Save Category</button>
-                                </div>
-                            </form>
-                        </div>
-                        <div class="categories-grid">
-                            <!-- Categories will be populated here -->
-                        </div>
-                    </div>
-                    
-                    <div id="reports-view" class="view hidden">
-                        <h2>Reports</h2>
-                        <div class="report-filters">
-                            <input type="month" id="report-month">
-                            <button id="generate-report" class="btn btn-primary">Generate Report</button>
-                        </div>
-                        <div class="report-content">
-                            <canvas id="income-expense-chart"></canvas>
-                            <canvas id="category-breakdown-chart"></canvas>
-                        </div>
-                    </div>
-                    
-                    <div id="users-view" class="view hidden">
-                        <h2>User Management</h2>
-                        <div class="view-actions">
-                            <button id="add-user-btn" class="btn btn-primary">Add User</button>
-                        </div>
-                        <div id="user-form-container" class="hidden">
-                            <form id="user-form">
-                                <div class="form-row">
-                                    <div class="form-group">
-                                        <label for="user-username">Username</label>
-                                        <input type="text" id="user-username" required>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="user-role">Role</label>
-                                        <select id="user-role" required>
-                                            <option value="admin">Admin</option>
-                                            <option value="viewer">Viewer</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="form-actions">
-                                    <button type="button" id="cancel-user-btn" class="btn">Cancel</button>
-                                    <button type="submit" class="btn btn-primary">Save User</button>
-                                </div>
-                            </form>
-                        </div>
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th>Username</th>
-                                    <th>Role</th>
-                                    <th>Status</th>
-                                    <th>Created</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="users-tbody">
-                                <!-- Users will be populated here -->
-                            </tbody>
-                        </table>
-                    </div>
-                    
-                    <div id="audit-view" class="view hidden">
-                        <h2>Audit Logs</h2>
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th>User</th>
-                                    <th>Action</th>
-                                    <th>Entity</th>
-                                    <th>Timestamp</th>
-                                    <th>Details</th>
-                                </tr>
-                            </thead>
-                            <tbody id="audit-tbody">
-                                <!-- Audit logs will be populated here -->
-                            </tbody>
-                        </table>
-                    </div>
-                    
-                    <div id="settings-view" class="view hidden">
-                        <h2>Settings</h2>
-                        <div class="settings-section">
-                            <h3>Change Password</h3>
-                            <form id="change-password-form">
-                                <div class="form-group">
-                                    <label for="current-password">Current Password</label>
-                                    <input type="password" id="current-password" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="new-password">New Password</label>
-                                    <input type="password" id="new-password" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="confirm-password">Confirm New Password</label>
-                                    <input type="password" id="confirm-password" required>
-                                </div>
-                                <button type="submit" class="btn btn-primary">Change Password</button>
-                            </form>
-                        </div>
-                        
-                        <div class="settings-section">
-                            <h3>Database Information</h3>
-                            <div class="info-item">
-                                <label>Database Location:</label>
-                                <span id="db-location">Not available</span>
-                            </div>
-                            <div class="info-item">
-                                <label>App Version:</label>
-                                <span id="app-version">1.0.0</span>
-                            </div>
-                        </div>
-                        
-                        <div class="settings-section">
-                            <h3>Backup & Restore</h3>
-                            <button id="backup-btn" class="btn">Backup Database</button>
-                            <button id="restore-btn" class="btn">Restore Database</button>
-                        </div>
-                    </div>
+                    <!-- Components will be dynamically inserted here -->
                 </div>
             </div>
         </main>
@@ -312,6 +31,25 @@
         </footer>
     </div>
     
+    <!-- Chart.js library -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- PDFMake library -->
+    <script src="../../assets/js/pdfmake.min.js"></script>
+    <script src="../../assets/js/vfs_fonts.js"></script>
+    
+    <!-- Component Scripts -->
+    <script src="../components/shared/base-component.js"></script>
+    <script src="../components/shared/utils.js"></script>
+    <script src="../components/auth/auth.js"></script>
+    <script src="../components/navigation/navigation.js"></script>
+    <script src="../components/dashboard/dashboard.js"></script>
+    <script src="../components/transactions/transactions.js"></script>
+    <script src="../components/categories/categories.js"></script>
+    <script src="../components/reports/reports.js"></script>
+    <script src="../components/users/users.js"></script>
+    <script src="../components/audit/audit.js"></script>
+    <script src="../components/settings/settings.js"></script>
+    <script src="../components/app-controller.js"></script>
     <script src="../renderer/renderer.js"></script>
 </body>
 </html>

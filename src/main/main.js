@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, session } = require('electron');
+const { app, BrowserWindow, ipcMain, session, dialog } = require('electron');
 const path = require('path');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
@@ -18,6 +18,9 @@ const createWindow = () => {
       nodeIntegration: false,
       contextIsolation: true,
       spellcheck: false,
+      sandbox: true,
+      webSecurity: true,
+      allowRunningInsecureContent: false,
     },
   });
 
@@ -43,6 +46,16 @@ app.on('ready', async () => {
     } else {
       callback({});
     }
+  });
+
+  // Additional security measures
+  session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+    callback({
+      responseHeaders: {
+        ...details.responseHeaders,
+        'Content-Security-Policy': ["default-src 'self'"]
+      }
+    });
   });
 
   // Clear cache on startup for security
@@ -73,9 +86,9 @@ app.on('activate', () => {
 
 // Security: Clear clipboard on app close if it contains sensitive data
 app.on('before-quit', () => {
-  // Note: We can't directly check clipboard content for security reasons
-  // In a real implementation, we would track if sensitive data was copied
-  // and clear accordingly
+  // Clear clipboard content on app close for security
+  const { clipboard } = require('electron');
+  clipboard.writeText('');
 });
 
 // Initialize the application on first run
@@ -219,6 +232,63 @@ ipcMain.handle('authenticate-user', async (event, { username, password }) => {
   } catch (error) {
     console.error('Authentication error:', error);
     return { success: false, message: 'Authentication failed' };
+  }
+});
+
+// Change user password
+ipcMain.handle('change-password', async (event, { currentPassword, newPassword, currentUser }) => {
+  try {
+    const { PrismaClient } = require('@prisma/client');
+    const prisma = new PrismaClient({
+      datasources: {
+        db: {
+          url: `file:${path.join(__dirname, '../../data/localFinTrack.db')}`
+        }
+      }
+    });
+    
+    // Get user with password hash
+    const user = await prisma.user.findUnique({
+      where: { id: currentUser.id }
+    });
+    
+    // Verify current password
+    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!isCurrentPasswordValid) {
+      await prisma.$disconnect();
+      return { success: false, message: 'Current password is incorrect' };
+    }
+    
+    // Hash new password
+    const saltRounds = 10;
+    const hashedNewPassword = await bcrypt.hash(newPassword, saltRounds);
+    
+    // Update user password
+    await prisma.user.update({
+      where: { id: currentUser.id },
+      data: {
+        passwordHash: hashedNewPassword,
+        mustChangePassword: false
+      }
+    });
+    
+    // Create audit log
+    await prisma.audit.create({
+      data: {
+        userId: currentUser.id,
+        action: 'CHANGE_PASSWORD',
+        entity: 'User',
+        entityId: currentUser.id,
+        details: JSON.stringify({ action: 'Password changed' })
+      }
+    });
+    
+    await prisma.$disconnect();
+    
+    return { success: true, message: 'Password changed successfully' };
+  } catch (error) {
+    console.error('Change password error:', error);
+    return { success: false, message: 'Failed to change password' };
   }
 });
 
@@ -821,6 +891,214 @@ ipcMain.handle('delete-transaction', async (event, { transactionId, currentUser 
   } catch (error) {
     console.error('Delete transaction error:', error);
     return { success: false, message: 'Failed to delete transaction' };
+  }
+});
+
+// Get audit logs (Super Admin only)
+ipcMain.handle('get-audit-logs', async (event, currentUser) => {
+  try {
+    // Check if current user is super admin
+    if (currentUser.role !== 'superadmin') {
+      return { success: false, message: 'Unauthorized access' };
+    }
+    
+    const { PrismaClient } = require('@prisma/client');
+    const prisma = new PrismaClient({
+      datasources: {
+        db: {
+          url: `file:${path.join(__dirname, '../../data/localFinTrack.db')}`
+        }
+      }
+    });
+    
+    // Get audit logs with user information
+    const auditLogs = await prisma.audit.findMany({
+      include: {
+        user: {
+          select: {
+            username: true
+          }
+        }
+      },
+      orderBy: {
+        timestamp: 'desc'
+      }
+    });
+    
+    await prisma.$disconnect();
+    
+    return { success: true, auditLogs };
+  } catch (error) {
+    console.error('Get audit logs error:', error);
+    return { success: false, message: 'Failed to retrieve audit logs' };
+  }
+});
+
+// Get report data
+ipcMain.handle('get-report-data', async (event, { month, year, currentUser }) => {
+  try {
+    const { PrismaClient } = require('@prisma/client');
+    const prisma = new PrismaClient({
+      datasources: {
+        db: {
+          url: `file:${path.join(__dirname, '../../data/localFinTrack.db')}`
+        }
+      }
+    });
+    
+    // Calculate date range for the month
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0, 23, 59, 59, 999);
+    
+    // Get transactions for the month
+    const transactions = await prisma.transaction.findMany({
+      where: {
+        createdById: currentUser.id,
+        date: {
+          gte: startDate,
+          lte: endDate
+        }
+      },
+      include: {
+        category: true
+      },
+      orderBy: {
+        date: 'asc'
+      }
+    });
+    
+    // Calculate totals
+    let totalIncome = 0;
+    let totalExpenses = 0;
+    
+    // Group by category for breakdown
+    const categoryBreakdown = {};
+    
+    transactions.forEach(transaction => {
+      const amount = parseFloat(transaction.amount);
+      
+      if (transaction.type === 'income') {
+        totalIncome += amount;
+      } else {
+        totalExpenses += amount;
+      }
+      
+      // Add to category breakdown
+      const categoryName = transaction.category.name;
+      if (!categoryBreakdown[categoryName]) {
+        categoryBreakdown[categoryName] = {
+          name: categoryName,
+          color: transaction.category.color,
+          income: 0,
+          expense: 0
+        };
+      }
+      
+      if (transaction.type === 'income') {
+        categoryBreakdown[categoryName].income += amount;
+      } else {
+        categoryBreakdown[categoryName].expense += amount;
+      }
+    });
+    
+    // Convert category breakdown to array
+    const categoryData = Object.values(categoryBreakdown);
+    
+    await prisma.$disconnect();
+    
+    return { 
+      success: true, 
+      data: {
+        transactions,
+        totalIncome,
+        totalExpenses,
+        netBalance: totalIncome - totalExpenses,
+        categoryData
+      }
+    };
+  } catch (error) {
+    console.error('Get report data error:', error);
+    return { success: false, message: 'Failed to retrieve report data' };
+  }
+});
+
+// Backup database
+ipcMain.handle('backup-database', async (event, currentUser) => {
+  try {
+    // Check if current user has backup permission
+    if (currentUser.role !== 'superadmin' && currentUser.role !== 'admin') {
+      return { success: false, message: 'Unauthorized access' };
+    }
+    
+    // Show save dialog to user
+    const { canceled, filePath } = await dialog.showSaveDialog({
+      title: 'Backup Database',
+      defaultPath: `localFinTrack-backup-${new Date().toISOString().split('T')[0]}.db`,
+      filters: [
+        { name: 'SQLite Database', extensions: ['db'] }
+      ]
+    });
+    
+    if (canceled || !filePath) {
+      return { success: false, message: 'Backup cancelled' };
+    }
+    
+    // Copy database file to selected location
+    const sourceDbPath = path.join(__dirname, '../../data/localFinTrack.db');
+    fs.copyFileSync(sourceDbPath, filePath);
+    
+    return { success: true, message: 'Database backed up successfully' };
+  } catch (error) {
+    console.error('Backup database error:', error);
+    return { success: false, message: 'Failed to backup database' };
+  }
+});
+
+// Restore database
+ipcMain.handle('restore-database', async (event, currentUser) => {
+  try {
+    // Check if current user is super admin
+    if (currentUser.role !== 'superadmin') {
+      return { success: false, message: 'Unauthorized access' };
+    }
+    
+    // Show open dialog to user
+    const { canceled, filePaths } = await dialog.showOpenDialog({
+      title: 'Restore Database',
+      filters: [
+        { name: 'SQLite Database', extensions: ['db'] }
+      ],
+      properties: ['openFile']
+    });
+    
+    if (canceled || !filePaths || filePaths.length === 0) {
+      return { success: false, message: 'Restore cancelled' };
+    }
+    
+    const backupFilePath = filePaths[0];
+    const targetDbPath = path.join(__dirname, '../../data/localFinTrack.db');
+    
+    // Show confirmation dialog
+    const { response } = await dialog.showMessageBox({
+      type: 'warning',
+      buttons: ['Cancel', 'Restore'],
+      defaultId: 0,
+      title: 'Confirm Database Restore',
+      message: 'Restoring database will replace all current data. This action cannot be undone.',
+      detail: 'Are you sure you want to restore the database?'
+    });
+    
+    if (response === 0) {
+      return { success: false, message: 'Restore cancelled' };
+    }
+    
+    // Replace database file
+    fs.copyFileSync(backupFilePath, targetDbPath);
+    
+    return { success: true, message: 'Database restored successfully. Application will restart.' };
+  } catch (error) {
+    console.error('Restore database error:', error);
+    return { success: false, message: 'Failed to restore database' };
   }
 });
 

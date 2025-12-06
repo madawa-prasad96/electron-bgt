@@ -1,0 +1,41 @@
+<div id="categories-view" class="view hidden">
+    <h2>Categories</h2>
+    <div class="tabs">
+        <button class="tab-btn active" data-tab="income">Income</button>
+        <button class="tab-btn" data-tab="expense">Expense</button>
+    </div>
+    <div class="view-actions">
+        <button id="add-category-btn" class="btn btn-primary">Add Category</button>
+    </div>
+    <div id="category-form-container" class="hidden">
+        <form id="category-form">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="category-name">Name</label>
+                    <input type="text" id="category-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="category-type">Type</label>
+                    <select id="category-type" required>
+                        <option value="income">Income</option>
+                        <option value="expense">Expense</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="category-color">Color</label>
+                <div class="color-picker">
+                    <input type="color" id="category-color" value="#3B82F6">
+                    <span id="color-preview" class="color-preview" style="background-color: #3B82F6;"></span>
+                </div>
+            </div>
+            <div class="form-actions">
+                <button type="button" id="cancel-category-btn" class="btn">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Category</button>
+            </div>
+        </form>
+    </div>
+    <div class="categories-grid">
+        <!-- Categories will be populated here -->
+    </div>
+</div>
