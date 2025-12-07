@@ -5,22 +5,67 @@ class UsersComponent extends BaseComponent {
     }
 
     async render() {
-        // Fetch the HTML template
         try {
-            const response = await fetch('../components/users/users.html');
-            const html = await response.text();
+            console.log('Rendering users component...');
             
-            // Create a container div and set its innerHTML
+            // Create the HTML directly instead of fetching it
             this.container = document.createElement('div');
-            this.container.innerHTML = html;
+            // Remove the outer div with id since it will be added by the app controller
+            this.container.innerHTML = `
+<h2>User Management</h2>
+<div class="view-actions">
+    <button id="add-user-btn" class="btn btn-primary">Add User</button>
+</div>
+<div id="user-form-container" class="hidden">
+    <form id="user-form">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="user-username">Username</label>
+                <input type="text" id="user-username" required>
+            </div>
+            <div class="form-group">
+                <label for="user-role">Role</label>
+                <select id="user-role" required>
+                    <option value="admin">Admin</option>
+                    <option value="user">User</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-actions">
+            <button type="button" id="cancel-user-btn" class="btn">Cancel</button>
+            <button type="submit" class="btn btn-primary">Save User</button>
+        </div>
+    </form>
+</div>
+<table class="data-table">
+    <thead>
+        <tr>
+            <th>Username</th>
+            <th>Role</th>
+            <th>Status</th>
+            <th>Created At</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody id="users-tbody">
+        <!-- Users will be populated here -->
+    </tbody>
+</table>
+            `;
             
             // Add event listeners
             this.attachEventListeners();
             
             return this.container;
         } catch (error) {
-            console.error('Error loading users component:', error);
-            return document.createElement('div');
+            console.error('Error rendering users component:', error);
+            // Create a fallback container with error message
+            this.container = document.createElement('div');
+            this.container.innerHTML = `
+                <h2>User Management</h2>
+                <p>Error rendering users component: ${error.message}</p>
+            `;
+            return this.container;
         }
     }
 
@@ -62,7 +107,7 @@ class UsersComponent extends BaseComponent {
 
                     if (result.success) {
                         ComponentUtils.showMessage(
-                            this.container.querySelector('#users-view .message') || this.container,
+                            this.container.querySelector('.message') || this.container,
                             `User created successfully. Temporary password: ${result.tempPassword}`,
                             'success'
                         );
@@ -70,14 +115,14 @@ class UsersComponent extends BaseComponent {
                         this.loadUsers();
                     } else {
                         ComponentUtils.showMessage(
-                            this.container.querySelector('#users-view .message') || this.container,
+                            this.container.querySelector('.message') || this.container,
                             result.message,
                             'error'
                         );
                     }
                 } catch (error) {
                     ComponentUtils.showMessage(
-                        this.container.querySelector('#users-view .message') || this.container,
+                        this.container.querySelector('.message') || this.container,
                         'An error occurred while creating the user',
                         'error'
                     );
@@ -114,14 +159,14 @@ class UsersComponent extends BaseComponent {
                 });
             } else {
                 ComponentUtils.showMessage(
-                    this.container.querySelector('#users-view .message') || this.container,
+                    this.container.querySelector('.message') || this.container,
                     result.message,
                     'error'
                 );
             }
         } catch (error) {
             ComponentUtils.showMessage(
-                this.container.querySelector('#users-view .message') || this.container,
+                this.container.querySelector('.message') || this.container,
                 'An error occurred while loading users',
                 'error'
             );

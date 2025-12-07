@@ -40,6 +40,7 @@ body {
   color: var(--text-primary);
   transition: var(--transition);
   min-height: 100vh;
+  overflow: hidden; /* Prevent unnecessary scrolling */
 }
 
 .hidden {
@@ -71,7 +72,7 @@ body {
 
 .app-main {
   display: flex;
-  min-height: calc(100vh - 4rem);
+  height: calc(100vh - 8rem); /* Adjust for header and footer height */
 }
 
 .sidebar {
@@ -79,6 +80,7 @@ body {
   background-color: var(--surface-color);
   border-right: 1px solid var(--border-color);
   padding: 1rem 0;
+  flex-shrink: 0;
 }
 
 .sidebar ul {
@@ -116,7 +118,8 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: calc(100vh - 4rem);
+  height: calc(100vh - 8rem); /* Adjust for header and footer height */
+  padding: 2rem 0;
 }
 
 .auth-form {

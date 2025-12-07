@@ -1,26 +1,13 @@
 class AuthComponent {
     constructor() {
-        this.container = null;
+        this.container = document.getElementById('login-container');
+        // Add event listeners
+        this.attachEventListeners();
     }
 
     async render() {
-        // Fetch the HTML template
-        try {
-            const response = await fetch('../components/auth/login.html');
-            const html = await response.text();
-            
-            // Create a container div and set its innerHTML
-            this.container = document.createElement('div');
-            this.container.innerHTML = html;
-            
-            // Add event listeners
-            this.attachEventListeners();
-            
-            return this.container;
-        } catch (error) {
-            console.error('Error loading auth component:', error);
-            return document.createElement('div');
-        }
+        // The container already exists in the DOM, just return it
+        return this.container;
     }
 
     attachEventListeners() {
@@ -38,12 +25,32 @@ class AuthComponent {
                     const result = await window.electronAPI.authenticateUser({ username, password });
 
                     if (result.success) {
-                        // Hide login container and show dashboard
-                        this.container.classList.add('hidden');
-                        document.getElementById('dashboard-container').classList.remove('hidden');
-
+                        console.log('Login successful, user:', result.user);
                         // Store user info in localStorage
                         localStorage.setItem('currentUser', JSON.stringify(result.user));
+                        
+                        // Hide login container
+                        this.hide();
+                        
+                        // Show main app container
+                        const mainApp = document.getElementById('main-app');
+                        if (mainApp) {
+                            mainApp.classList.remove('hidden');
+                            console.log('Main app container shown');
+                        } else {
+                            console.error('Main app container not found');
+                        }
+                        
+                        // Notify the app controller that we're now authenticated
+                        if (window.appController) {
+                            window.appController.isAuthenticated = true;
+                            console.log('Initializing main components...');
+                            await window.appController.initMainComponents();
+                            console.log('Showing dashboard view...');
+                            window.appController.showView('dashboard');
+                        } else {
+                            console.error('App controller not found');
+                        }
                     } else {
                         this.showMessage(loginMessage, result.message, 'error');
                     }

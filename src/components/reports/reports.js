@@ -6,14 +6,47 @@ class ReportsComponent extends BaseComponent {
     }
 
     async render() {
-        // Fetch the HTML template
         try {
-            const response = await fetch('../components/reports/reports.html');
-            const html = await response.text();
+            console.log('Rendering reports component...');
             
-            // Create a container div and set its innerHTML
+            // Create the HTML directly instead of fetching it
             this.container = document.createElement('div');
-            this.container.innerHTML = html;
+            // Remove the outer div with id since it will be added by the app controller
+            this.container.innerHTML = `
+<h2>Reports</h2>
+<div class="report-filters">
+    <input type="month" id="report-month">
+    <button id="generate-report" class="btn btn-primary">Generate Report</button>
+    <button id="export-pdf" class="btn">Export to PDF</button>
+</div>
+<div class="report-content">
+    <div class="chart-container">
+        <h3>Income vs Expenses</h3>
+        <canvas id="income-expense-chart"></canvas>
+    </div>
+    <div class="chart-container">
+        <h3>Category Breakdown</h3>
+        <canvas id="category-breakdown-chart"></canvas>
+    </div>
+    <div class="report-summary">
+        <h3>Summary</h3>
+        <div class="summary-stats">
+            <div class="stat-card">
+                <h4>Total Income</h4>
+                <p class="amount income">$0.00</p>
+            </div>
+            <div class="stat-card">
+                <h4>Total Expenses</h4>
+                <p class="amount expense">$0.00</p>
+            </div>
+            <div class="stat-card">
+                <h4>Net Balance</h4>
+                <p class="amount">$0.00</p>
+            </div>
+        </div>
+    </div>
+</div>
+            `;
             
             // Initialize report view
             this.initReportView();
@@ -23,8 +56,14 @@ class ReportsComponent extends BaseComponent {
             
             return this.container;
         } catch (error) {
-            console.error('Error loading reports component:', error);
-            return document.createElement('div');
+            console.error('Error rendering reports component:', error);
+            // Create a fallback container with error message
+            this.container = document.createElement('div');
+            this.container.innerHTML = `
+                <h2>Reports</h2>
+                <p>Error rendering reports component: ${error.message}</p>
+            `;
+            return this.container;
         }
     }
 
@@ -74,14 +113,14 @@ class ReportsComponent extends BaseComponent {
                 this.renderReport();
             } else {
                 ComponentUtils.showMessage(
-                    this.container.querySelector('#reports-view .message') || this.container,
+                    this.container.querySelector('.message') || this.container,
                     result.message || 'Failed to generate report',
                     'error'
                 );
             }
         } catch (error) {
             ComponentUtils.showMessage(
-                this.container.querySelector('#reports-view .message') || this.container,
+                this.container.querySelector('.message') || this.container,
                 'An error occurred while generating the report',
                 'error'
             );
@@ -314,13 +353,13 @@ class ReportsComponent extends BaseComponent {
             pdfDocGenerator.download(`financial-report-${this.reportData.year}-${String(this.reportData.month).padStart(2, '0')}.pdf`);
             
             ComponentUtils.showMessage(
-                this.container.querySelector('#reports-view .message') || this.container,
+                this.container.querySelector('.message') || this.container,
                 'Report exported successfully',
                 'success'
             );
         } catch (error) {
             ComponentUtils.showMessage(
-                this.container.querySelector('#reports-view .message') || this.container,
+                this.container.querySelector('.message') || this.container,
                 'An error occurred while exporting the report',
                 'error'
             );

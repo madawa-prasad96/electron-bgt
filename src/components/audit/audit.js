@@ -5,22 +5,43 @@ class AuditComponent extends BaseComponent {
     }
 
     async render() {
-        // Fetch the HTML template
         try {
-            const response = await fetch('../components/audit/audit.html');
-            const html = await response.text();
+            console.log('Rendering audit component...');
             
-            // Create a container div and set its innerHTML
+            // Create the HTML directly instead of fetching it
             this.container = document.createElement('div');
-            this.container.innerHTML = html;
+            // Remove the outer div with id since it will be added by the app controller
+            this.container.innerHTML = `
+<h2>Audit Logs</h2>
+<table class="data-table">
+    <thead>
+        <tr>
+            <th>User</th>
+            <th>Action</th>
+            <th>Entity</th>
+            <th>Timestamp</th>
+            <th>Details</th>
+        </tr>
+    </thead>
+    <tbody id="audit-tbody">
+        <!-- Audit logs will be populated here -->
+    </tbody>
+</table>
+            `;
             
             // Add event listeners
             this.attachEventListeners();
             
             return this.container;
         } catch (error) {
-            console.error('Error loading audit component:', error);
-            return document.createElement('div');
+            console.error('Error rendering audit component:', error);
+            // Create a fallback container with error message
+            this.container = document.createElement('div');
+            this.container.innerHTML = `
+                <h2>Audit Logs</h2>
+                <p>Error rendering audit component: ${error.message}</p>
+            `;
+            return this.container;
         }
     }
 
@@ -50,14 +71,14 @@ class AuditComponent extends BaseComponent {
                 });
             } else {
                 ComponentUtils.showMessage(
-                    this.container.querySelector('#audit-view .message') || this.container,
+                    this.container.querySelector('.message') || this.container,
                     result.message,
                     'error'
                 );
             }
         } catch (error) {
             ComponentUtils.showMessage(
-                this.container.querySelector('#audit-view .message') || this.container,
+                this.container.querySelector('.message') || this.container,
                 'An error occurred while loading audit logs',
                 'error'
             );

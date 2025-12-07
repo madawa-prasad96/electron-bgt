@@ -18,11 +18,30 @@
             </div>
         </header>
         
-        <main class="app-main">
-            <div id="dashboard-container">
-                <div class="content-area">
-                    <!-- Components will be dynamically inserted here -->
-                </div>
+        <!-- Login Container -->
+        <div id="login-container" class="auth-container">
+            <div class="auth-form">
+                <h2>Login to Your Account</h2>
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="username">Username</label>
+                        <input type="text" id="username" name="username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" name="password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Login</button>
+                    <div id="login-message" class="message"></div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Main App Container (Hidden by default, shown after login) -->
+        <main id="main-app" class="app-main hidden">
+            <!-- Navigation will be inserted here -->
+            <div class="content-area">
+                <!-- Components will be dynamically inserted here -->
             </div>
         </main>
         

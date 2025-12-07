@@ -13,20 +13,20 @@ class AppController {
         this.settingsComponent = null;
         this.currentView = 'dashboard';
         this.components = {};
+        this.isAuthenticated = false;
     }
 
     async init() {
+        // Make this instance globally accessible
+        window.appController = this;
+        
         // Initialize theme
         this.initTheme();
         
-        // Initialize components
-        await this.initComponents();
-        
-        // Attach event listeners
-        this.attachEventListeners();
-        
-        // Show initial view
-        this.showView(this.currentView);
+        // Always start with login screen, regardless of localStorage
+        // This ensures we always go through the authentication flow
+        document.getElementById('main-app').classList.add('hidden');
+        await this.initAuthComponent();
     }
 
     initTheme() {
@@ -49,32 +49,63 @@ class AppController {
         });
     }
 
-    async initComponents() {
-        // Initialize authentication component
+    async initAuthComponent() {
+        console.log('Initializing auth component...');
+        // Initialize authentication component for handling login events
         this.authComponent = new AuthComponent();
-        const authContainer = await this.authComponent.render();
-        document.getElementById('app').prepend(authContainer);
+        // The login form is already in the HTML, so we just need to ensure it's visible
+        const loginContainer = document.getElementById('login-container');
+        if (loginContainer) {
+            loginContainer.classList.remove('hidden');
+        }
+        console.log('Auth component initialized');
+    }
+
+    async initMainComponents() {
+        console.log('Initializing main components...');
+        
+        // Clear existing content
+        const contentArea = document.querySelector('.content-area');
+        if (contentArea) {
+            contentArea.innerHTML = '';
+        }
+        
+        // Initialize authentication component for handling login events
+        if (!this.authComponent) {
+            this.authComponent = new AuthComponent();
+        }
         
         // Initialize navigation component
+        console.log('Initializing navigation component...');
         this.navigationComponent = new NavigationComponent();
         this.navigationComponent.onViewChange = (viewName) => {
+            console.log('Navigation view change requested:', viewName);
             this.showView(viewName);
         };
         const navContainer = await this.navigationComponent.render();
-        document.querySelector('.content-area').before(navContainer);
+        const appMain = document.querySelector('.app-main');
+        if (appMain && navContainer) {
+            appMain.prepend(navContainer);
+        }
+        console.log('Navigation component initialized');
         
-        // Initialize dashboard component
+        // Initialize all components
+        console.log('Initializing dashboard component...');
         this.dashboardComponent = new DashboardComponent();
-        const dashboardContainer = await this.dashboardComponent.render();
-        document.querySelector('.content-area').appendChild(dashboardContainer);
-        
-        // Initialize other components
+        console.log('Initializing transactions component...');
         this.transactionsComponent = new TransactionsComponent();
+        console.log('Initializing categories component...');
         this.categoriesComponent = new CategoriesComponent();
+        console.log('Initializing reports component...');
         this.reportsComponent = new ReportsComponent();
+        console.log('Initializing users component...');
         this.usersComponent = new UsersComponent();
+        console.log('Initializing audit component...');
         this.auditComponent = new AuditComponent();
+        console.log('Initializing settings component...');
         this.settingsComponent = new SettingsComponent();
+        
+        console.log('All main components initialized');
     }
 
     attachEventListeners() {
@@ -82,15 +113,25 @@ class AppController {
     }
 
     async showView(viewName) {
+        console.log('Showing view:', viewName);
+        
+        // Don't show any view if not authenticated
+        if (!this.isAuthenticated) {
+            console.log('User not authenticated, cannot show view');
+            return;
+        }
+        
         this.currentView = viewName;
         
         // Update navigation
         if (this.navigationComponent) {
+            console.log('Updating navigation active view');
             this.navigationComponent.setActiveView(viewName);
         }
         
         // Hide all views
         const views = document.querySelectorAll('.view');
+        console.log('Found views to hide:', views.length);
         views.forEach(view => {
             view.classList.add('hidden');
             view.classList.remove('active');
@@ -98,11 +139,16 @@ class AppController {
         
         // Show the requested view
         let targetView = document.getElementById(`${viewName}-view`);
+        console.log('Existing view element:', targetView);
         
         // If the view doesn't exist yet, create it
         if (!targetView) {
+            console.log('Creating new view for:', viewName);
             let component = null;
             switch (viewName) {
+                case 'dashboard':
+                    component = this.dashboardComponent;
+                    break;
                 case 'transactions':
                     component = this.transactionsComponent;
                     break;
@@ -121,40 +167,105 @@ class AppController {
                 case 'settings':
                     component = this.settingsComponent;
                     break;
+                default:
+                    console.log('Unknown view:', viewName);
+                    return;
             }
             
             if (component) {
+                console.log('Rendering component for:', viewName);
                 const container = await component.render();
-                document.querySelector('.content-area').appendChild(container);
-                targetView = container;
+                console.log('Component rendered, container:', container);
+                
+                // Extract the content from the container and create a new element with the correct ID
+                if (container) {
+                    // Create a new div with the correct ID and class
+                    const viewElement = document.createElement('div');
+                    viewElement.id = `${viewName}-view`;
+                    viewElement.className = 'view';
+                    
+                    // Move all children from the container to the new view element
+                    while (container.firstChild) {
+                        viewElement.appendChild(container.firstChild);
+                    }
+                    
+                    const contentArea = document.querySelector('.content-area');
+                    if (contentArea) {
+                        contentArea.appendChild(viewElement);
+                        targetView = viewElement;
+                        console.log('New view appended to DOM:', targetView);
+                    } else {
+                        console.error('Content area not found');
+                    }
+                } else {
+                    console.error('Component render returned null container');
+                }
+                
+                // For dashboard, we need to ensure it's properly initialized
+                if (viewName === 'dashboard' && this.dashboardComponent) {
+                    this.dashboardComponent.container = targetView;
+                    this.dashboardComponent.initializeDashboard();
+                }
+            } else {
+                console.log('No component found for:', viewName);
             }
         }
         
         if (targetView) {
+            console.log('Activating view:', targetView);
             targetView.classList.remove('hidden');
             targetView.classList.add('active');
             
             // Load data for the view if needed
+            console.log('Loading data for view:', viewName);
             switch (viewName) {
                 case 'users':
-                    if (this.usersComponent) this.usersComponent.loadUsers();
+                    if (this.usersComponent) {
+                        // Reattach the component's container to ensure proper data loading
+                        this.usersComponent.container = targetView;
+                        this.usersComponent.loadUsers();
+                    }
                     break;
                 case 'categories':
-                    if (this.categoriesComponent) this.categoriesComponent.loadCategories();
+                    if (this.categoriesComponent) {
+                        // Reattach the component's container to ensure proper data loading
+                        this.categoriesComponent.container = targetView;
+                        this.categoriesComponent.loadCategories();
+                    }
                     break;
                 case 'transactions':
                     if (this.transactionsComponent) {
+                        // Reattach the component's container to ensure proper data loading
+                        this.transactionsComponent.container = targetView;
                         this.transactionsComponent.loadTransactions();
                         this.transactionsComponent.loadCategoriesForFilter();
                     }
                     break;
                 case 'audit':
-                    if (this.auditComponent) this.auditComponent.loadAuditLogs();
+                    if (this.auditComponent) {
+                        // Reattach the component's container to ensure proper data loading
+                        this.auditComponent.container = targetView;
+                        this.auditComponent.loadAuditLogs();
+                    }
                     break;
                 case 'reports':
                     // Report view is initialized in the component
                     break;
+                case 'dashboard':
+                    if (this.dashboardComponent) {
+                        this.dashboardComponent.container = targetView;
+                        this.dashboardComponent.initializeDashboard();
+                    }
+                    break;
+                case 'settings':
+                    if (this.settingsComponent) {
+                        // Reattach the component's container to ensure proper data loading
+                        this.settingsComponent.container = targetView;
+                    }
+                    break;
             }
+        } else {
+            console.log('No target view found or created for:', viewName);
         }
     }
 
@@ -192,6 +303,7 @@ class AppController {
 
 // Initialize the app when DOM is loaded
 document.addEventListener('DOMContentLoaded', async () => {
+    console.log('DOM loaded, initializing app controller');
     const app = new AppController();
     await app.init();
 });

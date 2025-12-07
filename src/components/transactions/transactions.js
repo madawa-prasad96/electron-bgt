@@ -5,26 +5,121 @@ class TransactionsComponent extends BaseComponent {
     }
 
     async render() {
-        // Fetch the HTML template
         try {
-            const response = await fetch('../components/transactions/transactions.html');
-            const html = await response.text();
+            console.log('Rendering transactions component...');
             
-            // Create a container div and set its innerHTML
+            // Create the HTML directly instead of fetching it
             this.container = document.createElement('div');
-            this.container.innerHTML = html;
+            // Remove the outer div with id since it will be added by the app controller
+            this.container.innerHTML = `
+<h2>Transactions</h2>
+<div class="view-actions">
+    <button id="add-transaction-btn" class="btn btn-primary">Add Transaction</button>
+</div>
+<div id="transaction-form-container" class="hidden">
+    <form id="transaction-form">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="transaction-date">Date</label>
+                <input type="date" id="transaction-date" required>
+            </div>
+            <div class="form-group">
+                <label for="transaction-type">Type</label>
+                <select id="transaction-type" required>
+                    <option value="income">Income</option>
+                    <option value="expense">Expense</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="transaction-amount">Amount</label>
+                <input type="number" id="transaction-amount" step="0.01" min="0" required>
+            </div>
+            <div class="form-group">
+                <label for="transaction-category">Category</label>
+                <select id="transaction-category" required>
+                    <option value="">Select Category</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="transaction-description">Description</label>
+            <input type="text" id="transaction-description" required>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="transaction-payment-method">Payment Method</label>
+                <input type="text" id="transaction-payment-method">
+            </div>
+            <div class="form-group">
+                <label for="transaction-notes">Notes</label>
+                <input type="text" id="transaction-notes">
+            </div>
+        </div>
+        <div class="form-actions">
+            <button type="button" id="cancel-transaction-btn" class="btn">Cancel</button>
+            <button type="submit" class="btn btn-primary">Save Transaction</button>
+        </div>
+    </form>
+</div>
+<div class="filters">
+    <input type="date" id="start-date">
+    <input type="date" id="end-date">
+    <select id="category-filter">
+        <option value="">All Categories</option>
+    </select>
+    <select id="type-filter">
+        <option value="">All Types</option>
+        <option value="income">Income</option>
+        <option value="expense">Expense</option>
+    </select>
+    <button id="apply-filters" class="btn">Apply Filters</button>
+</div>
+<table class="data-table">
+    <thead>
+        <tr>
+            <th>Date</th>
+            <th>Description</th>
+            <th>Category</th>
+            <th>Amount</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody id="transactions-tbody">
+        <!-- Transactions will be populated here -->
+    </tbody>
+</table>
+            `;
+            
+            console.log('Transactions component HTML created, container:', this.container);
             
             // Add event listeners
             this.attachEventListeners();
             
+            console.log('Transactions component rendered successfully');
             return this.container;
         } catch (error) {
-            console.error('Error loading transactions component:', error);
-            return document.createElement('div');
+            console.error('Error rendering transactions component:', error);
+            // Create a fallback container with error message
+            this.container = document.createElement('div');
+            this.container.innerHTML = `
+                <h2>Transactions</h2>
+                <p>Error rendering transactions component: ${error.message}</p>
+            `;
+            return this.container;
         }
     }
 
     attachEventListeners() {
+        // Make sure we have a container
+        if (!this.container) {
+            console.warn('No container found for transactions component');
+            return;
+        }
+        
+        console.log('Attaching event listeners for transactions component');
+        
         // Add transaction button
         const addTransactionBtn = this.container.querySelector('#add-transaction-btn');
         if (addTransactionBtn) {
@@ -69,7 +164,7 @@ class TransactionsComponent extends BaseComponent {
 
                     if (result.success) {
                         ComponentUtils.showMessage(
-                            this.container.querySelector('#transactions-view .message') || this.container,
+                            this.container.querySelector('.message') || this.container,
                             'Transaction created successfully',
                             'success'
                         );
@@ -77,14 +172,14 @@ class TransactionsComponent extends BaseComponent {
                         this.loadTransactions();
                     } else {
                         ComponentUtils.showMessage(
-                            this.container.querySelector('#transactions-view .message') || this.container,
+                            this.container.querySelector('.message') || this.container,
                             result.message,
                             'error'
                         );
                     }
                 } catch (error) {
                     ComponentUtils.showMessage(
-                        this.container.querySelector('#transactions-view .message') || this.container,
+                        this.container.querySelector('.message') || this.container,
                         'An error occurred while creating the transaction',
                         'error'
                     );
@@ -103,9 +198,17 @@ class TransactionsComponent extends BaseComponent {
 
         // Load categories for filter and form when component is shown
         this.loadCategoriesForFilter();
+        
+        console.log('Event listeners attached for transactions component');
     }
 
     async loadTransactions() {
+        // Make sure we have a container
+        if (!this.container) {
+            console.warn('No container found for transactions component when loading transactions');
+            return;
+        }
+        
         try {
             // Get filter values
             const startDate = this.container.querySelector('#start-date').value;
@@ -126,37 +229,39 @@ class TransactionsComponent extends BaseComponent {
 
             if (result.success) {
                 const transactionsTbody = this.container.querySelector('#transactions-tbody');
-                transactionsTbody.innerHTML = '';
+                if (transactionsTbody) {
+                    transactionsTbody.innerHTML = '';
 
-                result.transactions.forEach(transaction => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>${ComponentUtils.formatDate(transaction.date)}</td>
-                        <td>${transaction.description}</td>
-                        <td>
-                            <span class="category-color" style="background-color: ${transaction.category.color};"></span>
-                            ${transaction.category.name}
-                        </td>
-                        <td class="${transaction.type === 'income' ? 'income' : 'expense'}">
-                            ${ComponentUtils.formatCurrency(transaction.amount)}
-                        </td>
-                        <td>
-                            <button class="btn btn-edit" data-id="${transaction.id}">Edit</button>
-                            <button class="btn btn-danger" data-id="${transaction.id}">Delete</button>
-                        </td>
-                    `;
-                    transactionsTbody.appendChild(row);
-                });
+                    result.transactions.forEach(transaction => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${ComponentUtils.formatDate(transaction.date)}</td>
+                            <td>${transaction.description}</td>
+                            <td>
+                                <span class="category-color" style="background-color: ${transaction.category.color};"></span>
+                                ${transaction.category.name}
+                            </td>
+                            <td class="${transaction.type === 'income' ? 'income' : 'expense'}">
+                                ${ComponentUtils.formatCurrency(transaction.amount)}
+                            </td>
+                            <td>
+                                <button class="btn btn-edit" data-id="${transaction.id}">Edit</button>
+                                <button class="btn btn-danger" data-id="${transaction.id}">Delete</button>
+                            </td>
+                        `;
+                        transactionsTbody.appendChild(row);
+                    });
+                }
             } else {
                 ComponentUtils.showMessage(
-                    this.container.querySelector('#transactions-view .message') || this.container,
+                    this.container.querySelector('.message') || this.container,
                     result.message,
                     'error'
                 );
             }
         } catch (error) {
             ComponentUtils.showMessage(
-                this.container.querySelector('#transactions-view .message') || this.container,
+                this.container.querySelector('.message') || this.container,
                 'An error occurred while loading transactions',
                 'error'
             );
@@ -165,6 +270,12 @@ class TransactionsComponent extends BaseComponent {
     }
 
     async loadCategoriesForFilter() {
+        // Make sure we have a container
+        if (!this.container) {
+            console.warn('No container found for transactions component when loading categories');
+            return;
+        }
+        
         try {
             const result = await window.electronAPI.getCategories(this.currentUser);
 
@@ -173,16 +284,26 @@ class TransactionsComponent extends BaseComponent {
                 const transactionCategory = this.container.querySelector('#transaction-category');
 
                 // Clear existing options
-                categoryFilter.innerHTML = '<option value="">All Categories</option>';
-                transactionCategory.innerHTML = '<option value="">Select Category</option>';
+                if (categoryFilter) {
+                    categoryFilter.innerHTML = '<option value="">All Categories</option>';
+                }
+                if (transactionCategory) {
+                    transactionCategory.innerHTML = '<option value="">Select Category</option>';
+                }
 
-                result.categories.forEach(category => {
-                    const option = document.createElement('option');
-                    option.value = category.id;
-                    option.textContent = category.name;
-                    categoryFilter.appendChild(option.cloneNode(true));
-                    transactionCategory.appendChild(option);
-                });
+                if (result.categories) {
+                    result.categories.forEach(category => {
+                        const option = document.createElement('option');
+                        option.value = category.id;
+                        option.textContent = category.name;
+                        if (categoryFilter) {
+                            categoryFilter.appendChild(option.cloneNode(true));
+                        }
+                        if (transactionCategory) {
+                            transactionCategory.appendChild(option);
+                        }
+                    });
+                }
             }
         } catch (error) {
             console.error('Load categories for filter error:', error);
