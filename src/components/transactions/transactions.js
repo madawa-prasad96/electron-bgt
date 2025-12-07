@@ -125,10 +125,19 @@ class TransactionsComponent extends BaseComponent {
         const addTransactionBtn = this.container.querySelector('#add-transaction-btn');
         if (addTransactionBtn) {
             addTransactionBtn.addEventListener('click', () => {
+                console.log('Add transaction button clicked');
                 this.container.querySelector('#transaction-form-container').classList.remove('hidden');
-                this.container.querySelector('#transaction-form').reset();
                 // Set today's date as default
-                this.container.querySelector('#transaction-date').valueAsDate = new Date();
+                const today = new Date();
+                // Format date as YYYY-MM-DD for input type=date
+                const formattedDate = today.toISOString().split('T')[0];
+                this.container.querySelector('#transaction-date').value = formattedDate;
+                console.log('Date field set to:', formattedDate);
+                // Log the actual value in the date field
+                setTimeout(() => {
+                    const dateField = this.container.querySelector('#transaction-date');
+                    console.log('Date field value:', dateField.value);
+                }, 100);
             });
         }
 
@@ -147,19 +156,43 @@ class TransactionsComponent extends BaseComponent {
                 e.preventDefault();
                 
                 // Validate form data
-                const formData = new FormData(transactionForm);
+                // Directly access form field values for more reliable data extraction
+                const dateField = this.container.querySelector('#transaction-date');
+                console.log('Date field element:', dateField);
+                if (!dateField) {
+                    console.error('Date field not found!');
+                    ComponentUtils.showMessage(
+                        this.container.querySelector('.message') || this.container,
+                        'Form error: Date field not found',
+                        'error'
+                    );
+                    return;
+                }
+                
                 const transactionData = {
-                    date: formData.get('transaction-date'),
-                    type: formData.get('transaction-type'),
-                    amount: formData.get('transaction-amount'),
-                    categoryId: formData.get('transaction-category'),
-                    description: formData.get('transaction-description'),
-                    paymentMethod: formData.get('transaction-payment-method'),
-                    notes: formData.get('transaction-notes')
+                    date: dateField.value,
+                    type: this.container.querySelector('#transaction-type').value,
+                    amount: this.container.querySelector('#transaction-amount').value,
+                    categoryId: this.container.querySelector('#transaction-category').value,
+                    description: this.container.querySelector('#transaction-description').value,
+                    paymentMethod: this.container.querySelector('#transaction-payment-method').value,
+                    notes: this.container.querySelector('#transaction-notes').value
                 };
                 
+                console.log('Date field value:', dateField.value);
+                
+                // Debugging: Log the form data
+                console.log('Transaction form data:', transactionData);
+                
                 // Client-side validation
+                console.log('Validating date field:', transactionData.date, typeof transactionData.date);
+                // More robust date validation
+                console.log('Checking date field value:', transactionData.date);
+                console.log('Date field type:', typeof transactionData.date);
+                
+                // Check if date is valid
                 if (!transactionData.date) {
+                    console.log('Date is null or undefined');
                     ComponentUtils.showMessage(
                         this.container.querySelector('.message') || this.container,
                         'Please select a date',
@@ -167,6 +200,43 @@ class TransactionsComponent extends BaseComponent {
                     );
                     return;
                 }
+                
+                const dateString = transactionData.date.toString().trim();
+                if (dateString === '') {
+                    console.log('Date string is empty');
+                    ComponentUtils.showMessage(
+                        this.container.querySelector('.message') || this.container,
+                        'Please select a date',
+                        'error'
+                    );
+                    return;
+                }
+                
+                // Try to parse the date to see if it's valid
+                // HTML date inputs should be in YYYY-MM-DD format
+                const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+                if (!dateRegex.test(dateString)) {
+                    console.log('Date is not in valid YYYY-MM-DD format:', dateString);
+                    ComponentUtils.showMessage(
+                        this.container.querySelector('.message') || this.container,
+                        'Please select a valid date',
+                        'error'
+                    );
+                    return;
+                }
+                
+                const parsedDate = new Date(dateString);
+                if (isNaN(parsedDate.getTime())) {
+                    console.log('Date is not valid:', dateString);
+                    ComponentUtils.showMessage(
+                        this.container.querySelector('.message') || this.container,
+                        'Please select a valid date',
+                        'error'
+                    );
+                    return;
+                }
+                
+                console.log('Date validation passed');
                 
                 if (!transactionData.type) {
                     ComponentUtils.showMessage(
