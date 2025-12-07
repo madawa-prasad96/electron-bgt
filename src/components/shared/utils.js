@@ -3,7 +3,43 @@
 class ComponentUtils {
     // Helper function to show messages
     static showMessage(element, message, type) {
-        element.textContent = message;
+        // Clear any existing content
+        element.innerHTML = '';
+        
+        // Create message content
+        const messageSpan = document.createElement('span');
+        messageSpan.textContent = message;
+        
+        // Add dismiss button for error messages
+        let dismissButton = null;
+        if (type === 'error') {
+            dismissButton = document.createElement('button');
+            dismissButton.textContent = '×';
+            dismissButton.className = 'message-dismiss';
+            dismissButton.style.cssText = `
+                background: none;
+                border: none;
+                color: inherit;
+                font-size: 1.2rem;
+                cursor: pointer;
+                float: right;
+                margin-left: 10px;
+                padding: 0;
+                line-height: 1;
+            `;
+            dismissButton.addEventListener('click', () => {
+                element.textContent = '';
+                element.className = 'message';
+            });
+        }
+        
+        // Add elements to container
+        if (dismissButton) {
+            element.appendChild(dismissButton);
+        }
+        element.appendChild(messageSpan);
+        
+        // Set class
         element.className = `message ${type}`;
         
         // Auto-hide success messages after 3 seconds

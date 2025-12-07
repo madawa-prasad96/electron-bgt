@@ -201,11 +201,7 @@ class AppController {
                     console.error('Component render returned null container');
                 }
                 
-                // For dashboard, we need to ensure it's properly initialized
-                if (viewName === 'dashboard' && this.dashboardComponent) {
-                    this.dashboardComponent.container = targetView;
-                    this.dashboardComponent.initializeDashboard();
-                }
+                // Dashboard initialization is handled in the switch statement below
             } else {
                 console.log('No component found for:', viewName);
             }
@@ -254,7 +250,7 @@ class AppController {
                 case 'dashboard':
                     if (this.dashboardComponent) {
                         this.dashboardComponent.container = targetView;
-                        this.dashboardComponent.initializeDashboard();
+                        await this.dashboardComponent.initializeDashboard();
                     }
                     break;
                 case 'settings':

@@ -749,16 +749,42 @@ ipcMain.handle('create-transaction', async (event, { transactionData, currentUse
       }
     });
     
+    // Validate transaction data
+    if (!transactionData.date || !transactionData.type || !transactionData.amount || !transactionData.categoryId || !transactionData.description) {
+      await prisma.$disconnect();
+      return { success: false, message: 'Missing required transaction data' };
+    }
+    
+    // Validate amount
+    const amount = parseFloat(transactionData.amount);
+    if (isNaN(amount) || amount <= 0) {
+      await prisma.$disconnect();
+      return { success: false, message: 'Invalid amount' };
+    }
+    
+    // Validate category ID
+    const categoryId = parseInt(transactionData.categoryId);
+    if (isNaN(categoryId)) {
+      await prisma.$disconnect();
+      return { success: false, message: 'Invalid category' };
+    }
+    
+    // Validate type
+    if (transactionData.type !== 'income' && transactionData.type !== 'expense') {
+      await prisma.$disconnect();
+      return { success: false, message: 'Invalid transaction type' };
+    }
+    
     // Create transaction
     const transaction = await prisma.transaction.create({
       data: {
         date: new Date(transactionData.date),
         type: transactionData.type,
-        amount: parseFloat(transactionData.amount),
-        categoryId: parseInt(transactionData.categoryId),
+        amount: amount,
+        categoryId: categoryId,
         description: transactionData.description,
-        paymentMethod: transactionData.paymentMethod,
-        notes: transactionData.notes,
+        paymentMethod: transactionData.paymentMethod || '',
+        notes: transactionData.notes || '',
         createdAt: new Date(),
         updatedAt: new Date(),
         createdById: currentUser.id

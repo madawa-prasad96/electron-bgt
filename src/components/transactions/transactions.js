@@ -62,6 +62,7 @@ class TransactionsComponent extends BaseComponent {
             <button type="submit" class="btn btn-primary">Save Transaction</button>
         </div>
     </form>
+    <div class="message"></div>
 </div>
 <div class="filters">
     <input type="date" id="start-date">
@@ -145,6 +146,7 @@ class TransactionsComponent extends BaseComponent {
             transactionForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 
+                // Validate form data
                 const formData = new FormData(transactionForm);
                 const transactionData = {
                     date: formData.get('transaction-date'),
@@ -155,6 +157,52 @@ class TransactionsComponent extends BaseComponent {
                     paymentMethod: formData.get('transaction-payment-method'),
                     notes: formData.get('transaction-notes')
                 };
+                
+                // Client-side validation
+                if (!transactionData.date) {
+                    ComponentUtils.showMessage(
+                        this.container.querySelector('.message') || this.container,
+                        'Please select a date',
+                        'error'
+                    );
+                    return;
+                }
+                
+                if (!transactionData.type) {
+                    ComponentUtils.showMessage(
+                        this.container.querySelector('.message') || this.container,
+                        'Please select a transaction type',
+                        'error'
+                    );
+                    return;
+                }
+                
+                if (!transactionData.amount || isNaN(parseFloat(transactionData.amount)) || parseFloat(transactionData.amount) <= 0) {
+                    ComponentUtils.showMessage(
+                        this.container.querySelector('.message') || this.container,
+                        'Please enter a valid amount',
+                        'error'
+                    );
+                    return;
+                }
+                
+                if (!transactionData.categoryId) {
+                    ComponentUtils.showMessage(
+                        this.container.querySelector('.message') || this.container,
+                        'Please select a category',
+                        'error'
+                    );
+                    return;
+                }
+                
+                if (!transactionData.description) {
+                    ComponentUtils.showMessage(
+                        this.container.querySelector('.message') || this.container,
+                        'Please enter a description',
+                        'error'
+                    );
+                    return;
+                }
 
                 try {
                     const result = await window.electronAPI.createTransaction({
@@ -168,19 +216,20 @@ class TransactionsComponent extends BaseComponent {
                             'Transaction created successfully',
                             'success'
                         );
+                        transactionForm.reset();
                         this.container.querySelector('#transaction-form-container').classList.add('hidden');
                         this.loadTransactions();
                     } else {
                         ComponentUtils.showMessage(
                             this.container.querySelector('.message') || this.container,
-                            result.message,
+                            result.message || 'Failed to create transaction',
                             'error'
                         );
                     }
                 } catch (error) {
                     ComponentUtils.showMessage(
                         this.container.querySelector('.message') || this.container,
-                        'An error occurred while creating the transaction',
+                        'An error occurred while creating the transaction: ' + error.message,
                         'error'
                     );
                     console.error('Create transaction error:', error);

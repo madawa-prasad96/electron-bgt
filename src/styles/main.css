@@ -73,6 +73,7 @@ body {
 .app-main {
   display: flex;
   height: calc(100vh - 8rem); /* Adjust for header and footer height */
+  overflow: hidden;
 }
 
 .sidebar {
@@ -81,10 +82,14 @@ body {
   border-right: 1px solid var(--border-color);
   padding: 1rem 0;
   flex-shrink: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .sidebar ul {
   list-style: none;
+  flex-grow: 1;
 }
 
 .sidebar li {
@@ -207,6 +212,22 @@ body {
   background-color: rgba(239, 68, 68, 0.1);
   color: var(--danger-color);
   border: 1px solid var(--danger-color);
+}
+
+.message-dismiss {
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: 1.2rem;
+  cursor: pointer;
+  float: right;
+  margin-left: 10px;
+  padding: 0;
+  line-height: 1;
+}
+
+.message-dismiss:hover {
+  opacity: 0.7;
 }
 
 /* Dashboard */

@@ -1,6 +1,7 @@
 class DashboardComponent {
     constructor() {
         this.container = null;
+        this.currentUser = ComponentUtils.getCurrentUser();
     }
 
     async render() {
@@ -29,7 +30,7 @@ class DashboardComponent {
             `;
             
             // Initialize dashboard data
-            this.initializeDashboard();
+            await this.initializeDashboard();
             
             return this.container;
         } catch (error) {
@@ -44,20 +45,73 @@ class DashboardComponent {
         }
     }
 
-    initializeDashboard() {
+    async initializeDashboard() {
         // Make sure we have a container
         if (!this.container) {
             return;
         }
         
-        // In a real implementation, this would fetch actual data from the backend
-        const totalBalanceElement = this.container.querySelector('.stat-card .amount');
-        const incomeElement = this.container.querySelector('.stat-card .amount.income');
-        const expenseElement = this.container.querySelector('.stat-card .amount.expense');
+        try {
+            // Fetch transactions data
+            const result = await window.electronAPI.getTransactions({
+                filters: {},
+                currentUser: this.currentUser
+            });
+            
+            if (result.success) {
+                // Calculate dashboard statistics
+                const stats = this.calculateDashboardStats(result.transactions);
+                
+                // Update UI with calculated values
+                const statCards = this.container.querySelectorAll('.stat-card .amount');
+                if (statCards.length >= 3) {
+                    statCards[0].textContent = ComponentUtils.formatCurrency(stats.totalBalance);
+                    statCards[1].textContent = ComponentUtils.formatCurrency(stats.incomeThisMonth);
+                    statCards[2].textContent = ComponentUtils.formatCurrency(stats.expensesThisMonth);
+                }
+            } else {
+                console.error('Failed to load dashboard data:', result.message);
+            }
+        } catch (error) {
+            console.error('Error initializing dashboard:', error);
+        }
+    }
+    
+    calculateDashboardStats(transactions) {
+        // Initialize stats
+        const stats = {
+            totalBalance: 0,
+            incomeThisMonth: 0,
+            expensesThisMonth: 0
+        };
         
-        if (totalBalanceElement) totalBalanceElement.textContent = '$5,240.50';
-        if (incomeElement) incomeElement.textContent = '$3,200.00';
-        if (expenseElement) expenseElement.textContent = '$1,850.25';
+        // Get current month and year
+        const now = new Date();
+        const currentMonth = now.getMonth();
+        const currentYear = now.getFullYear();
+        
+        // Calculate totals
+        transactions.forEach(transaction => {
+            const transactionDate = new Date(transaction.date);
+            
+            if (transaction.type === 'income') {
+                stats.totalBalance += transaction.amount;
+                
+                // Check if transaction is in current month
+                if (transactionDate.getMonth() === currentMonth && transactionDate.getFullYear() === currentYear) {
+                    stats.incomeThisMonth += transaction.amount;
+                }
+            } else {
+                stats.totalBalance -= transaction.amount;
+                
+                // Check if transaction is in current month
+                if (transactionDate.getMonth() === currentMonth && transactionDate.getFullYear() === currentYear) {
+                    stats.expensesThisMonth += transaction.amount;
+                }
+            }
+        });
+        
+        return stats;
     }
 
     show() {
