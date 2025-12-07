@@ -6,6 +6,23 @@ const fs = require('fs');
 const os = require('os');
 const safeStorage = require('electron-safe-storage');
 
+// Prisma Client singleton
+let prismaInstance = null;
+
+function getPrismaClient() {
+  if (!prismaInstance) {
+    const { PrismaClient } = require('@prisma/client');
+    prismaInstance = new PrismaClient({
+      datasources: {
+        db: {
+          url: `file:${path.join(__dirname, '../../data/localFinTrack.db')}`
+        }
+      }
+    });
+  }
+  return prismaInstance;
+}
+
 const createWindow = () => {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
@@ -150,15 +167,7 @@ async function generateEncryptionKey() {
 // Create super admin user on first run
 async function createSuperAdminUser() {
   try {
-    // Import Prisma client inside the function to avoid initialization issues
-    const { PrismaClient } = require('@prisma/client');
-    const prisma = new PrismaClient({
-      datasources: {
-        db: {
-          url: `file:${path.join(__dirname, '../../data/localFinTrack.db')}`
-        }
-      }
-    });
+    const prisma = getPrismaClient();
     
     // Check if super admin user already exists
     const superAdmin = await prisma.user.findUnique({
@@ -187,8 +196,6 @@ async function createSuperAdminUser() {
       
       console.log('Super admin user created with temporary password: Admin@123');
     }
-    
-    await prisma.$disconnect();
   } catch (error) {
     console.error('Failed to create super admin user:', error);
     throw error;
@@ -198,28 +205,17 @@ async function createSuperAdminUser() {
 // IPC handlers
 ipcMain.handle('authenticate-user', async (event, { username, password }) => {
   try {
-    // Import Prisma client inside the function to avoid initialization issues
-    const { PrismaClient } = require('@prisma/client');
-    const prisma = new PrismaClient({
-      datasources: {
-        db: {
-          url: `file:${path.join(__dirname, '../../data/localFinTrack.db')}`
-        }
-      }
-    });
+    const prisma = getPrismaClient();
     
     const user = await prisma.user.findUnique({
       where: { username }
     });
     
     if (!user || !user.isActive) {
-      await prisma.$disconnect();
       return { success: false, message: 'Invalid credentials' };
     }
     
     const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
-    
-    await prisma.$disconnect();
     
     if (!isPasswordValid) {
       return { success: false, message: 'Invalid credentials' };
@@ -238,14 +234,7 @@ ipcMain.handle('authenticate-user', async (event, { username, password }) => {
 // Change user password
 ipcMain.handle('change-password', async (event, { currentPassword, newPassword, currentUser }) => {
   try {
-    const { PrismaClient } = require('@prisma/client');
-    const prisma = new PrismaClient({
-      datasources: {
-        db: {
-          url: `file:${path.join(__dirname, '../../data/localFinTrack.db')}`
-        }
-      }
-    });
+    const prisma = getPrismaClient();
     
     // Get user with password hash
     const user = await prisma.user.findUnique({
@@ -255,7 +244,6 @@ ipcMain.handle('change-password', async (event, { currentPassword, newPassword, 
     // Verify current password
     const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.passwordHash);
     if (!isCurrentPasswordValid) {
-      await prisma.$disconnect();
       return { success: false, message: 'Current password is incorrect' };
     }
     
@@ -283,8 +271,6 @@ ipcMain.handle('change-password', async (event, { currentPassword, newPassword, 
       }
     });
     
-    await prisma.$disconnect();
-    
     return { success: true, message: 'Password changed successfully' };
   } catch (error) {
     console.error('Change password error:', error);
@@ -300,14 +286,7 @@ ipcMain.handle('get-all-users', async (event, currentUser) => {
       return { success: false, message: 'Unauthorized access' };
     }
     
-    const { PrismaClient } = require('@prisma/client');
-    const prisma = new PrismaClient({
-      datasources: {
-        db: {
-          url: `file:${path.join(__dirname, '../../data/localFinTrack.db')}`
-        }
-      }
-    });
+    const prisma = getPrismaClient();
     
     const users = await prisma.user.findMany({
       select: {
@@ -319,8 +298,6 @@ ipcMain.handle('get-all-users', async (event, currentUser) => {
         createdById: true
       }
     });
-    
-    await prisma.$disconnect();
     
     return { success: true, users };
   } catch (error) {
@@ -337,14 +314,7 @@ ipcMain.handle('create-user', async (event, { userData, currentUser }) => {
       return { success: false, message: 'Unauthorized access' };
     }
     
-    const { PrismaClient } = require('@prisma/client');
-    const prisma = new PrismaClient({
-      datasources: {
-        db: {
-          url: `file:${path.join(__dirname, '../../data/localFinTrack.db')}`
-        }
-      }
-    });
+    const prisma = getPrismaClient();
     
     // Check if username already exists
     const existingUser = await prisma.user.findUnique({
@@ -352,7 +322,6 @@ ipcMain.handle('create-user', async (event, { userData, currentUser }) => {
     });
     
     if (existingUser) {
-      await prisma.$disconnect();
       return { success: false, message: 'Username already exists' };
     }
     
@@ -392,8 +361,6 @@ ipcMain.handle('create-user', async (event, { userData, currentUser }) => {
       }
     });
     
-    await prisma.$disconnect();
-    
     // Return user data and temporary password
     return { success: true, user: newUser, tempPassword };
   } catch (error) {
@@ -410,14 +377,7 @@ ipcMain.handle('update-user', async (event, { userId, userData, currentUser }) =
       return { success: false, message: 'Unauthorized access' };
     }
     
-    const { PrismaClient } = require('@prisma/client');
-    const prisma = new PrismaClient({
-      datasources: {
-        db: {
-          url: `file:${path.join(__dirname, '../../data/localFinTrack.db')}`
-        }
-      }
-    });
+    const prisma = getPrismaClient();
     
     // Prepare update data
     const updateData = {};
@@ -457,8 +417,6 @@ ipcMain.handle('update-user', async (event, { userId, userData, currentUser }) =
       }
     });
     
-    await prisma.$disconnect();
-    
     return { success: true, user: updatedUser };
   } catch (error) {
     console.error('Update user error:', error);
@@ -479,14 +437,7 @@ ipcMain.handle('delete-user', async (event, { userId, currentUser }) => {
       return { success: false, message: 'Cannot delete super admin user' };
     }
     
-    const { PrismaClient } = require('@prisma/client');
-    const prisma = new PrismaClient({
-      datasources: {
-        db: {
-          url: `file:${path.join(__dirname, '../../data/localFinTrack.db')}`
-        }
-      }
-    });
+    const prisma = getPrismaClient();
     
     // Get user details for audit log
     const userToDelete = await prisma.user.findUnique({
@@ -494,7 +445,6 @@ ipcMain.handle('delete-user', async (event, { userId, currentUser }) => {
     });
     
     if (!userToDelete) {
-      await prisma.$disconnect();
       return { success: false, message: 'User not found' };
     }
     
@@ -514,8 +464,6 @@ ipcMain.handle('delete-user', async (event, { userId, currentUser }) => {
       }
     });
     
-    await prisma.$disconnect();
-    
     return { success: true, message: 'User deleted successfully' };
   } catch (error) {
     console.error('Delete user error:', error);
@@ -526,22 +474,13 @@ ipcMain.handle('delete-user', async (event, { userId, currentUser }) => {
 // Get all categories
 ipcMain.handle('get-categories', async (event, currentUser) => {
   try {
-    const { PrismaClient } = require('@prisma/client');
-    const prisma = new PrismaClient({
-      datasources: {
-        db: {
-          url: `file:${path.join(__dirname, '../../data/localFinTrack.db')}`
-        }
-      }
-    });
+    const prisma = getPrismaClient();
     
     const categories = await prisma.category.findMany({
       where: {
         createdById: currentUser.id
       }
     });
-    
-    await prisma.$disconnect();
     
     return { success: true, categories };
   } catch (error) {
@@ -553,14 +492,7 @@ ipcMain.handle('get-categories', async (event, currentUser) => {
 // Create category
 ipcMain.handle('create-category', async (event, { categoryData, currentUser }) => {
   try {
-    const { PrismaClient } = require('@prisma/client');
-    const prisma = new PrismaClient({
-      datasources: {
-        db: {
-          url: `file:${path.join(__dirname, '../../data/localFinTrack.db')}`
-        }
-      }
-    });
+    const prisma = getPrismaClient();
     
     // Create category
     const category = await prisma.category.create({
@@ -585,8 +517,6 @@ ipcMain.handle('create-category', async (event, { categoryData, currentUser }) =
       }
     });
     
-    await prisma.$disconnect();
-    
     return { success: true, category };
   } catch (error) {
     console.error('Create category error:', error);
@@ -597,14 +527,7 @@ ipcMain.handle('create-category', async (event, { categoryData, currentUser }) =
 // Update category
 ipcMain.handle('update-category', async (event, { categoryId, categoryData, currentUser }) => {
   try {
-    const { PrismaClient } = require('@prisma/client');
-    const prisma = new PrismaClient({
-      datasources: {
-        db: {
-          url: `file:${path.join(__dirname, '../../data/localFinTrack.db')}`
-        }
-      }
-    });
+    const prisma = getPrismaClient();
     
     // Update category
     const category = await prisma.category.update({
@@ -628,8 +551,6 @@ ipcMain.handle('update-category', async (event, { categoryId, categoryData, curr
       }
     });
     
-    await prisma.$disconnect();
-    
     return { success: true, category };
   } catch (error) {
     console.error('Update category error:', error);
@@ -640,14 +561,7 @@ ipcMain.handle('update-category', async (event, { categoryId, categoryData, curr
 // Delete category
 ipcMain.handle('delete-category', async (event, { categoryId, currentUser }) => {
   try {
-    const { PrismaClient } = require('@prisma/client');
-    const prisma = new PrismaClient({
-      datasources: {
-        db: {
-          url: `file:${path.join(__dirname, '../../data/localFinTrack.db')}`
-        }
-      }
-    });
+    const prisma = getPrismaClient();
     
     // Get category details for audit log
     const categoryToDelete = await prisma.category.findUnique({
@@ -655,7 +569,6 @@ ipcMain.handle('delete-category', async (event, { categoryId, currentUser }) => 
     });
     
     if (!categoryToDelete) {
-      await prisma.$disconnect();
       return { success: false, message: 'Category not found' };
     }
     
@@ -675,8 +588,6 @@ ipcMain.handle('delete-category', async (event, { categoryId, currentUser }) => 
       }
     });
     
-    await prisma.$disconnect();
-    
     return { success: true, message: 'Category deleted successfully' };
   } catch (error) {
     console.error('Delete category error:', error);
@@ -687,14 +598,7 @@ ipcMain.handle('delete-category', async (event, { categoryId, currentUser }) => 
 // Get transactions with filters
 ipcMain.handle('get-transactions', async (event, { filters, currentUser }) => {
   try {
-    const { PrismaClient } = require('@prisma/client');
-    const prisma = new PrismaClient({
-      datasources: {
-        db: {
-          url: `file:${path.join(__dirname, '../../data/localFinTrack.db')}`
-        }
-      }
-    });
+    const prisma = getPrismaClient();
     
     // Build where clause
     const whereClause = {
@@ -728,8 +632,6 @@ ipcMain.handle('get-transactions', async (event, { filters, currentUser }) => {
       }
     });
     
-    await prisma.$disconnect();
-    
     return { success: true, transactions };
   } catch (error) {
     console.error('Get transactions error:', error);
@@ -740,38 +642,27 @@ ipcMain.handle('get-transactions', async (event, { filters, currentUser }) => {
 // Create transaction
 ipcMain.handle('create-transaction', async (event, { transactionData, currentUser }) => {
   try {
-    const { PrismaClient } = require('@prisma/client');
-    const prisma = new PrismaClient({
-      datasources: {
-        db: {
-          url: `file:${path.join(__dirname, '../../data/localFinTrack.db')}`
-        }
-      }
-    });
+    const prisma = getPrismaClient();
     
     // Validate transaction data
     if (!transactionData.date || !transactionData.type || !transactionData.amount || !transactionData.categoryId || !transactionData.description) {
-      await prisma.$disconnect();
       return { success: false, message: 'Missing required transaction data' };
     }
     
     // Validate amount
     const amount = parseFloat(transactionData.amount);
     if (isNaN(amount) || amount <= 0) {
-      await prisma.$disconnect();
       return { success: false, message: 'Invalid amount' };
     }
     
     // Validate category ID
     const categoryId = parseInt(transactionData.categoryId);
     if (isNaN(categoryId)) {
-      await prisma.$disconnect();
       return { success: false, message: 'Invalid category' };
     }
     
     // Validate type
     if (transactionData.type !== 'income' && transactionData.type !== 'expense') {
-      await prisma.$disconnect();
       return { success: false, message: 'Invalid transaction type' };
     }
     
@@ -809,8 +700,6 @@ ipcMain.handle('create-transaction', async (event, { transactionData, currentUse
       }
     });
     
-    await prisma.$disconnect();
-    
     return { success: true, transaction };
   } catch (error) {
     console.error('Create transaction error:', error);
@@ -821,14 +710,7 @@ ipcMain.handle('create-transaction', async (event, { transactionData, currentUse
 // Update transaction
 ipcMain.handle('update-transaction', async (event, { transactionId, transactionData, currentUser }) => {
   try {
-    const { PrismaClient } = require('@prisma/client');
-    const prisma = new PrismaClient({
-      datasources: {
-        db: {
-          url: `file:${path.join(__dirname, '../../data/localFinTrack.db')}`
-        }
-      }
-    });
+    const prisma = getPrismaClient();
     
     // Update transaction
     const transaction = await prisma.transaction.update({
@@ -860,8 +742,6 @@ ipcMain.handle('update-transaction', async (event, { transactionId, transactionD
       }
     });
     
-    await prisma.$disconnect();
-    
     return { success: true, transaction };
   } catch (error) {
     console.error('Update transaction error:', error);
@@ -872,14 +752,7 @@ ipcMain.handle('update-transaction', async (event, { transactionId, transactionD
 // Delete transaction
 ipcMain.handle('delete-transaction', async (event, { transactionId, currentUser }) => {
   try {
-    const { PrismaClient } = require('@prisma/client');
-    const prisma = new PrismaClient({
-      datasources: {
-        db: {
-          url: `file:${path.join(__dirname, '../../data/localFinTrack.db')}`
-        }
-      }
-    });
+    const prisma = getPrismaClient();
     
     // Get transaction details for audit log
     const transactionToDelete = await prisma.transaction.findUnique({
@@ -887,7 +760,6 @@ ipcMain.handle('delete-transaction', async (event, { transactionId, currentUser 
     });
     
     if (!transactionToDelete) {
-      await prisma.$disconnect();
       return { success: false, message: 'Transaction not found' };
     }
     
@@ -911,8 +783,6 @@ ipcMain.handle('delete-transaction', async (event, { transactionId, currentUser 
       }
     });
     
-    await prisma.$disconnect();
-    
     return { success: true, message: 'Transaction deleted successfully' };
   } catch (error) {
     console.error('Delete transaction error:', error);
@@ -928,14 +798,7 @@ ipcMain.handle('get-audit-logs', async (event, currentUser) => {
       return { success: false, message: 'Unauthorized access' };
     }
     
-    const { PrismaClient } = require('@prisma/client');
-    const prisma = new PrismaClient({
-      datasources: {
-        db: {
-          url: `file:${path.join(__dirname, '../../data/localFinTrack.db')}`
-        }
-      }
-    });
+    const prisma = getPrismaClient();
     
     // Get audit logs with user information
     const auditLogs = await prisma.audit.findMany({
@@ -951,8 +814,6 @@ ipcMain.handle('get-audit-logs', async (event, currentUser) => {
       }
     });
     
-    await prisma.$disconnect();
-    
     return { success: true, auditLogs };
   } catch (error) {
     console.error('Get audit logs error:', error);
@@ -963,14 +824,7 @@ ipcMain.handle('get-audit-logs', async (event, currentUser) => {
 // Get report data
 ipcMain.handle('get-report-data', async (event, { month, year, currentUser }) => {
   try {
-    const { PrismaClient } = require('@prisma/client');
-    const prisma = new PrismaClient({
-      datasources: {
-        db: {
-          url: `file:${path.join(__dirname, '../../data/localFinTrack.db')}`
-        }
-      }
-    });
+    const prisma = getPrismaClient();
     
     // Calculate date range for the month
     const startDate = new Date(year, month - 1, 1);
@@ -1029,8 +883,6 @@ ipcMain.handle('get-report-data', async (event, { month, year, currentUser }) =>
     
     // Convert category breakdown to array
     const categoryData = Object.values(categoryBreakdown);
-    
-    await prisma.$disconnect();
     
     return { 
       success: true, 
