@@ -23,8 +23,37 @@ class AppController {
         // Initialize theme
         this.initTheme();
         
-        // Always start with login screen, regardless of localStorage
-        // This ensures we always go through the authentication flow
+        // Check for existing valid session
+        const currentUser = localStorage.getItem('currentUser');
+        const loginExpiry = localStorage.getItem('loginExpiry');
+        
+        if (currentUser && loginExpiry) {
+            const expiryDate = new Date(loginExpiry);
+            const currentDate = new Date();
+            
+            // Check if session is still valid (within 7 days)
+            if (expiryDate > currentDate) {
+                // Valid session found, skip login
+                console.log('Valid session found, skipping login');
+                this.isAuthenticated = true;
+                
+                // Show main app
+                document.getElementById('main-app').classList.remove('hidden');
+                document.getElementById('login-container').classList.add('hidden');
+                
+                // Initialize main components
+                await this.initMainComponents();
+                this.showView('dashboard');
+                return;
+            } else {
+                // Session expired, clear storage
+                console.log('Session expired, clearing storage');
+                localStorage.removeItem('currentUser');
+                localStorage.removeItem('loginExpiry');
+            }
+        }
+        
+        // No valid session, show login screen
         document.getElementById('main-app').classList.add('hidden');
         await this.initAuthComponent();
     }
@@ -75,6 +104,12 @@ class AppController {
             this.authComponent = new AuthComponent();
         }
         
+        // Remove existing navigation if present
+        const existingNav = document.querySelector('.sidebar');
+        if (existingNav) {
+            existingNav.remove();
+        }
+        
         // Initialize navigation component
         console.log('Initializing navigation component...');
         this.navigationComponent = new NavigationComponent();
@@ -110,6 +145,28 @@ class AppController {
 
     attachEventListeners() {
         // Add any global event listeners here
+        
+        // Extend session on user activity
+        this.setupSessionExtension();
+    }
+    
+    setupSessionExtension() {
+        // Extend session on user activity
+        const extendSession = () => {
+            const currentUser = localStorage.getItem('currentUser');
+            if (currentUser && this.isAuthenticated) {
+                // Extend session for another 7 days
+                const expiryDate = new Date();
+                expiryDate.setDate(expiryDate.getDate() + 7);
+                localStorage.setItem('loginExpiry', expiryDate.toISOString());
+                console.log('Session extended for another 7 days');
+            }
+        };
+        
+        // Extend session on various user activities
+        document.addEventListener('click', extendSession);
+        document.addEventListener('keypress', extendSession);
+        document.addEventListener('mousemove', extendSession);
     }
 
     async showView(viewName) {

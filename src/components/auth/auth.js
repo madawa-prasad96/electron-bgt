@@ -21,13 +21,22 @@ class AuthComponent {
                 const username = this.container.querySelector('#username').value;
                 const password = this.container.querySelector('#password').value;
 
+                // Disable form during login attempt
+                const inputs = loginForm.querySelectorAll('input');
+                const buttons = loginForm.querySelectorAll('button');
+                inputs.forEach(input => input.disabled = true);
+                buttons.forEach(button => button.disabled = true);
+                
                 try {
                     const result = await window.electronAPI.authenticateUser({ username, password });
 
                     if (result.success) {
                         console.log('Login successful, user:', result.user);
-                        // Store user info in localStorage
+                        // Store user info in localStorage with 7-day expiry
+                        const expiryDate = new Date();
+                        expiryDate.setDate(expiryDate.getDate() + 7);
                         localStorage.setItem('currentUser', JSON.stringify(result.user));
+                        localStorage.setItem('loginExpiry', expiryDate.toISOString());
                         
                         // Hide login container
                         this.hide();
@@ -57,6 +66,10 @@ class AuthComponent {
                 } catch (error) {
                     this.showMessage(loginMessage, 'An error occurred during login', 'error');
                     console.error('Login error:', error);
+                } finally {
+                    // Re-enable form after login attempt
+                    inputs.forEach(input => input.disabled = false);
+                    buttons.forEach(button => button.disabled = false);
                 }
             });
         }

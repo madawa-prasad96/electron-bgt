@@ -49,6 +49,10 @@ class SettingsComponent extends BaseComponent {
         <span id="data-directory">-</span>
     </div>
 </div>
+<div class="settings-section">
+    <h3>Account</h3>
+    <button id="logout-btn" class="btn btn-danger">Logout</button>
+</div>
             `;
             
             // Add event listeners
@@ -194,6 +198,64 @@ class SettingsComponent extends BaseComponent {
                 }
             });
         }
+        
+        // Logout button
+        const logoutBtn = this.container.querySelector('#logout-btn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', () => {
+                // Confirm logout
+                if (confirm('Are you sure you want to logout?')) {
+                    // Perform logout
+                    this.logout();
+                }
+            });
+        }
+    }
+    
+    logout() {
+        // Clear user data from localStorage
+        localStorage.removeItem('currentUser');
+        localStorage.removeItem('loginToken');
+        localStorage.removeItem('loginExpiry');
+        
+        // Hide main app
+        const mainApp = document.getElementById('main-app');
+        if (mainApp) {
+            mainApp.classList.add('hidden');
+        }
+        
+        // Show login screen
+        const loginContainer = document.getElementById('login-container');
+        if (loginContainer) {
+            loginContainer.classList.remove('hidden');
+        }
+        
+        // Reset app controller state
+        if (window.appController) {
+            window.appController.isAuthenticated = false;
+            // Clear any existing content
+            const contentArea = document.querySelector('.content-area');
+            if (contentArea) {
+                contentArea.innerHTML = '';
+            }
+        }
+        
+        // Reset form fields and ensure form is enabled
+        const loginForm = document.getElementById('loginForm');
+        if (loginForm) {
+            loginForm.reset();
+            // Ensure form is enabled
+            const inputs = loginForm.querySelectorAll('input');
+            inputs.forEach(input => {
+                input.disabled = false;
+            });
+            const buttons = loginForm.querySelectorAll('button');
+            buttons.forEach(button => {
+                button.disabled = false;
+            });
+        }
+        
+        console.log('User logged out successfully');
     }
 }
 
