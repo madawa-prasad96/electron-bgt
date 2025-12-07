@@ -12,7 +12,12 @@ class UsersComponent extends BaseComponent {
             this.container = document.createElement('div');
             // Remove the outer div with id since it will be added by the app controller
             this.container.innerHTML = `
-<h2>User Management</h2>
+<div class="page-header">
+    <h2>User Management</h2>
+    <button id="refresh-users" class="refresh-button" title="Refresh Users">
+        <span class="refresh-icon">↻</span>
+    </button>
+</div>
 <div class="view-actions">
     <button id="add-user-btn" class="btn btn-primary">Add User</button>
 </div>
@@ -55,6 +60,24 @@ class UsersComponent extends BaseComponent {
             
             // Add event listeners
             this.attachEventListeners();
+                    
+            // Add event listener for refresh button
+            const refreshButton = this.container.querySelector('#refresh-users');
+            if (refreshButton) {
+                refreshButton.addEventListener('click', async () => {
+                    // Add loading indicator
+                    refreshButton.classList.add('loading');
+                            
+                    try {
+                        await this.loadUsers();
+                    } catch (error) {
+                        console.error('Error refreshing users:', error);
+                    } finally {
+                        // Remove loading indicator
+                        refreshButton.classList.remove('loading');
+                    }
+                });
+            }
             
             return this.container;
         } catch (error) {

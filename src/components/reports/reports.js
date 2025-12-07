@@ -13,7 +13,12 @@ class ReportsComponent extends BaseComponent {
             this.container = document.createElement('div');
             // Remove the outer div with id since it will be added by the app controller
             this.container.innerHTML = `
-<h2>Reports</h2>
+<div class="page-header">
+    <h2>Reports</h2>
+    <button id="refresh-reports" class="refresh-button" title="Refresh Reports">
+        <span class="refresh-icon">↻</span>
+    </button>
+</div>
 <div class="report-filters">
     <input type="month" id="report-month">
     <button id="generate-report" class="btn btn-primary">Generate Report</button>
@@ -53,6 +58,27 @@ class ReportsComponent extends BaseComponent {
             
             // Add event listeners
             this.attachEventListeners();
+                    
+            // Add event listener for refresh button
+            const refreshButton = this.container.querySelector('#refresh-reports');
+            if (refreshButton) {
+                refreshButton.addEventListener('click', async () => {
+                    // Add loading indicator
+                    refreshButton.classList.add('loading');
+                            
+                    try {
+                        // Re-generate the current report if data exists
+                        if (this.reportData) {
+                            await this.generateReport();
+                        }
+                    } catch (error) {
+                        console.error('Error refreshing reports:', error);
+                    } finally {
+                        // Remove loading indicator
+                        refreshButton.classList.remove('loading');
+                    }
+                });
+            }
             
             return this.container;
         } catch (error) {

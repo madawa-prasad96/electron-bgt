@@ -12,7 +12,12 @@ class AuditComponent extends BaseComponent {
             this.container = document.createElement('div');
             // Remove the outer div with id since it will be added by the app controller
             this.container.innerHTML = `
-<h2>Audit Logs</h2>
+<div class="page-header">
+    <h2>Audit Logs</h2>
+    <button id="refresh-audit" class="refresh-button" title="Refresh Audit Logs">
+        <span class="refresh-icon">↻</span>
+    </button>
+</div>
 <table class="data-table">
     <thead>
         <tr>
@@ -31,6 +36,24 @@ class AuditComponent extends BaseComponent {
             
             // Add event listeners
             this.attachEventListeners();
+                    
+            // Add event listener for refresh button
+            const refreshButton = this.container.querySelector('#refresh-audit');
+            if (refreshButton) {
+                refreshButton.addEventListener('click', async () => {
+                    // Add loading indicator
+                    refreshButton.classList.add('loading');
+                            
+                    try {
+                        await this.loadAuditLogs();
+                    } catch (error) {
+                        console.error('Error refreshing audit logs:', error);
+                    } finally {
+                        // Remove loading indicator
+                        refreshButton.classList.remove('loading');
+                    }
+                });
+            }
             
             return this.container;
         } catch (error) {

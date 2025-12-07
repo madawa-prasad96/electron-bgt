@@ -12,7 +12,12 @@ class SettingsComponent extends BaseComponent {
             this.container = document.createElement('div');
             // Remove the outer div with id since it will be added by the app controller
             this.container.innerHTML = `
-<h2>Settings</h2>
+<div class="page-header">
+    <h2>Settings</h2>
+    <button id="refresh-settings" class="refresh-button" title="Refresh Settings">
+        <span class="refresh-icon">↻</span>
+    </button>
+</div>
 <div class="settings-section">
     <h3>Change Password</h3>
     <form id="change-password-form">
@@ -57,6 +62,25 @@ class SettingsComponent extends BaseComponent {
             
             // Add event listeners
             this.attachEventListeners();
+                    
+            // Add event listener for refresh button
+            const refreshButton = this.container.querySelector('#refresh-settings');
+            if (refreshButton) {
+                refreshButton.addEventListener('click', async () => {
+                    // Add loading indicator
+                    refreshButton.classList.add('loading');
+                            
+                    try {
+                        // For settings, we just re-render the component
+                        await this.render();
+                    } catch (error) {
+                        console.error('Error refreshing settings:', error);
+                    } finally {
+                        // Remove loading indicator
+                        refreshButton.classList.remove('loading');
+                    }
+                });
+            }
             
             return this.container;
         } catch (error) {

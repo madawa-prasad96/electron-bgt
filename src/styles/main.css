@@ -541,6 +541,17 @@ body {
   .chart-container {
     height: 300px;
   }
+  
+  .page-header {
+    flex-direction: row;
+    justify-content: space-between;
+  }
+  
+  .refresh-button {
+    width: 36px;
+    height: 36px;
+    font-size: 1rem;
+  }
 }
 
 .app-footer {
@@ -550,6 +561,43 @@ body {
   border-top: 1px solid var(--border-color);
   color: var(--text-secondary);
   font-size: 0.875rem;
+}
+
+/* Page Header with Refresh Button */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.refresh-button {
+  background-color: var(--surface-color);
+  border: 1px solid var(--border-color);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+  font-size: 1.2rem;
+}
+
+.refresh-button:hover {
+  background-color: var(--primary-color);
+  color: white;
+  transform: rotate(90deg);
+}
+
+.refresh-button.loading {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 /* Dashboard Chart Styles */

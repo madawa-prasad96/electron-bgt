@@ -12,7 +12,12 @@ class CategoriesComponent extends BaseComponent {
             this.container = document.createElement('div');
             // Remove the outer div with id since it will be added by the app controller
             this.container.innerHTML = `
-<h2>Categories</h2>
+<div class="page-header">
+    <h2>Categories</h2>
+    <button id="refresh-categories" class="refresh-button" title="Refresh Categories">
+        <span class="refresh-icon">↻</span>
+    </button>
+</div>
 <div class="tabs">
     <button class="tab-btn active" data-tab="income">Income</button>
     <button class="tab-btn" data-tab="expense">Expense</button>
@@ -55,6 +60,24 @@ class CategoriesComponent extends BaseComponent {
             
             // Add event listeners
             this.attachEventListeners();
+                    
+            // Add event listener for refresh button
+            const refreshButton = this.container.querySelector('#refresh-categories');
+            if (refreshButton) {
+                refreshButton.addEventListener('click', async () => {
+                    // Add loading indicator
+                    refreshButton.classList.add('loading');
+                            
+                    try {
+                        await this.loadCategories();
+                    } catch (error) {
+                        console.error('Error refreshing categories:', error);
+                    } finally {
+                        // Remove loading indicator
+                        refreshButton.classList.remove('loading');
+                    }
+                });
+            }
             
             return this.container;
         } catch (error) {

@@ -12,7 +12,12 @@ class DashboardComponent {
             this.container = document.createElement('div');
             // Remove the outer div with id since it will be added by the app controller
             this.container.innerHTML = `
-<h2>Dashboard</h2>
+<div class="page-header">
+    <h2>Dashboard</h2>
+    <button id="refresh-dashboard" class="refresh-button" title="Refresh Dashboard">
+        <span class="refresh-icon">↻</span>
+    </button>
+</div>
 <div class="dashboard-stats">
     <div class="stat-card">
         <h3>Total Balance</h3>
@@ -49,6 +54,29 @@ class DashboardComponent {
             
             // Initialize chart
             this.initializeChart();
+            
+            // Add event listener for refresh button
+            const refreshButton = this.container.querySelector('#refresh-dashboard');
+            if (refreshButton) {
+                refreshButton.addEventListener('click', async () => {
+                    // Add loading indicator
+                    refreshButton.classList.add('loading');
+                    
+                    try {
+                        await this.initializeDashboard();
+                        
+                        // Get current time period from selector
+                        const timePeriodSelector = this.container.querySelector('#timePeriod');
+                        const timePeriod = timePeriodSelector ? timePeriodSelector.value : 'month';
+                        await this.updateChartData(timePeriod);
+                    } catch (error) {
+                        console.error('Error refreshing dashboard:', error);
+                    } finally {
+                        // Remove loading indicator
+                        refreshButton.classList.remove('loading');
+                    }
+                });
+            }
             
             return this.container;
         } catch (error) {

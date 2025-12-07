@@ -12,7 +12,12 @@ class TransactionsComponent extends BaseComponent {
             this.container = document.createElement('div');
             // Remove the outer div with id since it will be added by the app controller
             this.container.innerHTML = `
-<h2>Transactions</h2>
+<div class="page-header">
+    <h2>Transactions</h2>
+    <button id="refresh-transactions" class="refresh-button" title="Refresh Transactions">
+        <span class="refresh-icon">↻</span>
+    </button>
+</div>
 <div class="view-actions">
     <button id="add-transaction-btn" class="btn btn-primary">Add Transaction</button>
 </div>
@@ -97,6 +102,25 @@ class TransactionsComponent extends BaseComponent {
             
             // Add event listeners
             this.attachEventListeners();
+                    
+            // Add event listener for refresh button
+            const refreshButton = this.container.querySelector('#refresh-transactions');
+            if (refreshButton) {
+                refreshButton.addEventListener('click', async () => {
+                    // Add loading indicator
+                    refreshButton.classList.add('loading');
+                            
+                    try {
+                        await this.loadTransactions();
+                        await this.loadCategoriesForFilter();
+                    } catch (error) {
+                        console.error('Error refreshing transactions:', error);
+                    } finally {
+                        // Remove loading indicator
+                        refreshButton.classList.remove('loading');
+                    }
+                });
+            }
             
             console.log('Transactions component rendered successfully');
             return this.container;
