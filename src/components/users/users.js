@@ -2,6 +2,7 @@ class UsersComponent extends BaseComponent {
     constructor() {
         super();
         this.currentUser = ComponentUtils.getCurrentUser();
+        this.editingUserId = null;
     }
 
     async render() {
@@ -26,14 +27,29 @@ class UsersComponent extends BaseComponent {
         <div class="form-row">
             <div class="form-group">
                 <label for="user-username">Username</label>
-                <input type="text" id="user-username" required>
+                <input type="text" id="user-username" name="user-username" required>
             </div>
             <div class="form-group">
                 <label for="user-role">Role</label>
-                <select id="user-role" required>
+                <select id="user-role" name="user-role" required>
                     <option value="admin">Admin</option>
-                    <option value="user">User</option>
+                    <option value="viewer">Viewer</option>
                 </select>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="user-status">Status</label>
+                <select id="user-status" name="user-status">
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="user-reset-password" name="user-reset-password">
+                    Reset password (generate new temp)
+                </label>
             </div>
         </div>
         <div class="form-actions">
@@ -41,6 +57,7 @@ class UsersComponent extends BaseComponent {
             <button type="submit" class="btn btn-primary">Save User</button>
         </div>
     </form>
+    <div class="message"></div>
 </div>
 <table class="data-table">
     <thead>
@@ -99,6 +116,9 @@ class UsersComponent extends BaseComponent {
             addUserBtn.addEventListener('click', () => {
                 this.container.querySelector('#user-form-container').classList.remove('hidden');
                 this.container.querySelector('#user-form').reset();
+                this.editingUserId = null;
+                this.container.querySelector('#user-status').value = 'active';
+                this.container.querySelector('#user-reset-password').checked = false;
             });
         }
 
@@ -119,21 +139,36 @@ class UsersComponent extends BaseComponent {
                 const formData = new FormData(userForm);
                 const userData = {
                     username: formData.get('user-username'),
-                    role: formData.get('user-role')
+                    role: formData.get('user-role'),
+                    isActive: formData.get('user-status') === 'active',
+                    resetPassword: formData.get('user-reset-password') === 'on'
                 };
 
                 try {
-                    const result = await window.electronAPI.createUser({
-                        userData,
-                        currentUser: this.currentUser
-                    });
+                    let result;
+                    if (this.editingUserId) {
+                        result = await window.electronAPI.updateUser({
+                            userId: this.editingUserId,
+                            userData,
+                            currentUser: this.currentUser
+                        });
+                    } else {
+                        result = await window.electronAPI.createUser({
+                            userData,
+                            currentUser: this.currentUser
+                        });
+                    }
 
                     if (result.success) {
+                        const msg = this.editingUserId
+                            ? `User updated successfully${result.tempPassword ? `. New temp password: ${result.tempPassword}` : ''}`
+                            : `User created successfully. Temporary password: ${result.tempPassword}`;
                         ComponentUtils.showMessage(
                             this.container.querySelector('.message') || this.container,
-                            `User created successfully. Temporary password: ${result.tempPassword}`,
+                            msg,
                             'success'
                         );
+                        this.editingUserId = null;
                         this.container.querySelector('#user-form-container').classList.add('hidden');
                         this.loadUsers();
                     } else {
@@ -146,10 +181,10 @@ class UsersComponent extends BaseComponent {
                 } catch (error) {
                     ComponentUtils.showMessage(
                         this.container.querySelector('.message') || this.container,
-                        'An error occurred while creating the user',
+                        'An error occurred while saving the user',
                         'error'
                     );
-                    console.error('Create user error:', error);
+                    console.error('Save user error:', error);
                 }
             });
         }
@@ -175,11 +210,55 @@ class UsersComponent extends BaseComponent {
                         <td>${ComponentUtils.formatDate(user.createdAt)}</td>
                         <td>
                             <button class="btn btn-edit" data-id="${user.id}">Edit</button>
-                            <button class="btn btn-danger" data-id="${user.id}">Delete</button>
+                            <button class="btn ${user.isActive ? 'btn-danger' : 'btn-primary'}" data-action="toggle" data-id="${user.id}">
+                                ${user.isActive ? 'Deactivate' : 'Activate'}
+                            </button>
                         </td>
                     `;
                     usersTbody.appendChild(row);
                 });
+
+                // Actions delegation
+                usersTbody.onclick = async (e) => {
+                    const button = e.target.closest('button');
+                    if (!button) return;
+                    const id = parseInt(button.getAttribute('data-id'));
+                    if (isNaN(id)) return;
+                    const user = result.users.find(u => u.id === id);
+                    if (!user) return;
+
+                    if (button.classList.contains('btn-edit')) {
+                        this.editingUserId = id;
+                        this.container.querySelector('#user-username').value = user.username;
+                        this.container.querySelector('#user-role').value = user.role;
+                        this.container.querySelector('#user-status').value = user.isActive ? 'active' : 'inactive';
+                        this.container.querySelector('#user-reset-password').checked = false;
+                        this.container.querySelector('#user-form-container').classList.remove('hidden');
+                    } else if (button.getAttribute('data-action') === 'toggle') {
+                        try {
+                            const res = await window.electronAPI.updateUser({
+                                userId: id,
+                                userData: { isActive: !user.isActive },
+                                currentUser: this.currentUser
+                            });
+                            if (res.success) {
+                                this.loadUsers();
+                            } else {
+                                ComponentUtils.showMessage(
+                                    this.container.querySelector('.message') || this.container,
+                                    res.message || 'Failed to update user status',
+                                    'error'
+                                );
+                            }
+                        } catch (err) {
+                            ComponentUtils.showMessage(
+                                this.container.querySelector('.message') || this.container,
+                                'An error occurred while updating user status: ' + err.message,
+                                'error'
+                            );
+                        }
+                    }
+                };
             } else {
                 ComponentUtils.showMessage(
                     this.container.querySelector('.message') || this.container,

@@ -2,6 +2,8 @@ class CategoriesComponent extends BaseComponent {
     constructor() {
         super();
         this.currentUser = ComponentUtils.getCurrentUser();
+        this.currentTab = 'income';
+        this.editingCategoryId = null;
     }
 
     async render() {
@@ -30,11 +32,11 @@ class CategoriesComponent extends BaseComponent {
         <div class="form-row">
             <div class="form-group">
                 <label for="category-name">Name</label>
-                <input type="text" id="category-name" required>
+                <input type="text" id="category-name" name="category-name" required>
             </div>
             <div class="form-group">
                 <label for="category-type">Type</label>
-                <select id="category-type" required>
+                <select id="category-type" name="category-type" required>
                     <option value="income">Income</option>
                     <option value="expense">Expense</option>
                 </select>
@@ -43,7 +45,7 @@ class CategoriesComponent extends BaseComponent {
         <div class="form-group">
             <label for="category-color">Color</label>
             <div class="color-picker">
-                <input type="color" id="category-color" value="#3B82F6">
+                <input type="color" id="category-color" name="category-color" value="#3B82F6">
                 <span id="color-preview" class="color-preview" style="background-color: #3B82F6;"></span>
             </div>
         </div>
@@ -52,6 +54,7 @@ class CategoriesComponent extends BaseComponent {
             <button type="submit" class="btn btn-primary">Save Category</button>
         </div>
     </form>
+    <div class="message"></div>
 </div>
 <div class="categories-grid">
     <!-- Categories will be populated here -->
@@ -99,6 +102,8 @@ class CategoriesComponent extends BaseComponent {
             addCategoryBtn.addEventListener('click', () => {
                 this.container.querySelector('#category-form-container').classList.remove('hidden');
                 this.container.querySelector('#category-form').reset();
+                this.editingCategoryId = null;
+                this.container.querySelector('#category-type').value = this.currentTab;
             });
         }
 
@@ -131,35 +136,73 @@ class CategoriesComponent extends BaseComponent {
                     type: formData.get('category-type'),
                     color: formData.get('category-color')
                 };
+                
+                // Validate category data
+                if (!categoryData.name || categoryData.name.trim() === '') {
+                    ComponentUtils.showMessage(
+                        this.container.querySelector('#category-form-container .message'),
+                        'Category name is required',
+                        'error'
+                    );
+                    return;
+                }
+                
+                if (!categoryData.type) {
+                    ComponentUtils.showMessage(
+                        this.container.querySelector('#category-form-container .message'),
+                        'Category type is required',
+                        'error'
+                    );
+                    return;
+                }
+                
+                if (!categoryData.color) {
+                    ComponentUtils.showMessage(
+                        this.container.querySelector('#category-form-container .message'),
+                        'Category color is required',
+                        'error'
+                    );
+                    return;
+                }
 
                 try {
-                    const result = await window.electronAPI.createCategory({
-                        categoryData,
-                        currentUser: this.currentUser
-                    });
+                    let result;
+                    if (this.editingCategoryId) {
+                        result = await window.electronAPI.updateCategory({
+                            categoryId: this.editingCategoryId,
+                            categoryData,
+                            currentUser: this.currentUser
+                        });
+                    } else {
+                        result = await window.electronAPI.createCategory({
+                            categoryData,
+                            currentUser: this.currentUser
+                        });
+                    }
 
                     if (result.success) {
                         ComponentUtils.showMessage(
-                            this.container.querySelector('.message') || this.container,
-                            'Category created successfully',
+                            this.container.querySelector('#category-form-container .message'),
+                            this.editingCategoryId ? 'Category updated successfully' : 'Category created successfully',
                             'success'
                         );
+                        this.editingCategoryId = null;
                         this.container.querySelector('#category-form-container').classList.add('hidden');
                         this.loadCategories();
                     } else {
                         ComponentUtils.showMessage(
-                            this.container.querySelector('.message') || this.container,
-                            result.message,
+                            this.container.querySelector('#category-form-container .message'),
+                            result.message || 'Failed to save category',
                             'error'
                         );
                     }
                 } catch (error) {
                     ComponentUtils.showMessage(
-                        this.container.querySelector('.message') || this.container,
-                        'An error occurred while creating the category',
+                        this.container.querySelector('#category-form-container .message'),
+                        'An error occurred while saving the category: ' + error.message,
                         'error'
                     );
-                    console.error('Create category error:', error);
+                    console.error('Save category error:', error);
                 }
             });
         }
@@ -168,11 +211,10 @@ class CategoriesComponent extends BaseComponent {
         const tabButtons = this.container.querySelectorAll('.tab-btn');
         tabButtons.forEach(button => {
             button.addEventListener('click', () => {
-                // Remove active class from all tabs
                 tabButtons.forEach(btn => btn.classList.remove('active'));
-                // Add active class to clicked tab
                 button.classList.add('active');
-                // In a real implementation, this would load the appropriate categories
+                this.currentTab = button.getAttribute('data-tab');
+                this.loadCategories();
             });
         });
 
@@ -188,18 +230,74 @@ class CategoriesComponent extends BaseComponent {
                 const categoriesGrid = this.container.querySelector('.categories-grid');
                 categoriesGrid.innerHTML = '';
 
-                result.categories.forEach(category => {
+                const filtered = this.currentTab
+                    ? result.categories.filter(c => c.type === this.currentTab)
+                    : result.categories;
+
+                filtered.forEach(category => {
                     const card = document.createElement('div');
                     card.className = 'category-card';
+                    // Set the card background to the category color
+                    card.style.backgroundColor = category.color;
+                    card.style.color = '#ffffff';
+                    card.style.display = 'flex';
+                    card.style.flexDirection = 'column';
+                    card.style.justifyContent = 'space-between';
+                    card.style.padding = '1rem';
                     card.innerHTML = `
                         <div class="category-header">
-                            <span class="category-color" style="background-color: ${category.color};"></span>
                             <strong>${category.name}</strong>
                         </div>
-                        <div class="category-type">${category.type}</div>
+                        <div class="category-actions">
+                            <button class="btn btn-edit" data-id="${category.id}">Edit</button>
+                            <button class="btn btn-delete" data-id="${category.id}">Delete</button>
+                        </div>
                     `;
                     categoriesGrid.appendChild(card);
                 });
+
+                // Attach action handlers via delegation
+                categoriesGrid.onclick = async (e) => {
+                    const button = e.target.closest('button');
+                    if (!button) return;
+                    const id = parseInt(button.getAttribute('data-id'));
+                    if (isNaN(id)) return;
+
+                    const category = result.categories.find(c => c.id === id);
+                    if (!category) return;
+
+                    if (button.classList.contains('btn-edit')) {
+                        this.editingCategoryId = id;
+                        this.container.querySelector('#category-name').value = category.name;
+                        this.container.querySelector('#category-type').value = category.type;
+                        this.container.querySelector('#category-color').value = category.color;
+                        this.container.querySelector('#color-preview').style.backgroundColor = category.color;
+                        this.container.querySelector('#category-form-container').classList.remove('hidden');
+                    } else if (button.classList.contains('btn-delete')) {
+                        if (!confirm('Delete this category?')) return;
+                        try {
+                            const res = await window.electronAPI.deleteCategory({
+                                categoryId: id,
+                                currentUser: this.currentUser
+                            });
+                            if (res.success) {
+                                this.loadCategories();
+                            } else {
+                                ComponentUtils.showMessage(
+                                    this.container.querySelector('.message') || this.container,
+                                    res.message || 'Failed to delete category',
+                                    'error'
+                                );
+                            }
+                        } catch (err) {
+                            ComponentUtils.showMessage(
+                                this.container.querySelector('.message') || this.container,
+                                'An error occurred while deleting the category: ' + err.message,
+                                'error'
+                            );
+                        }
+                    }
+                };
             } else {
                 ComponentUtils.showMessage(
                     this.container.querySelector('.message') || this.container,
